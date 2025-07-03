@@ -1,0 +1,131 @@
+{
+  "general_knowledge": {
+    "transferable_strategies": [],
+    "meta_learning_principles": [],
+    "cross_environment_patterns": [],
+    "abstract_concepts": [],
+    "neural_symbolic_correlations": []
+  },
+  "environment_specific": {
+    "pong": {
+      "environment_profile": {
+        "environment_id": "pong",
+        "display_name": "Classic Pong",
+        "environment_type": "competitive_real_time",
+        "understanding_level": "basic",
+        "total_sessions": 1,
+        "first_encountered": 1751543356.4851751,
+        "last_updated": 1751543356.5095437
+      },
+      "objectives": {
+        "primary": "Score 21 points before opponent by hitting ball with paddle",
+        "secondary": [
+          "Keep ball in play as long as possible",
+          "Prevent opponent from scoring",
+          "Maintain consistent paddle control"
+        ],
+        "victory_conditions": [],
+        "failure_conditions": []
+      },
+      "rules": {
+        "core_mechanics": [
+          "Hit ball with paddle to keep it in play",
+          "Ball bounces off top and bottom walls",
+          "Score 1 point when ball passes opponent paddle",
+          "Ball resets to center after each point",
+          "Paddle can only move up and down",
+          "Paddle must stay within screen boundaries",
+          "First to 21 points wins the match"
+        ],
+        "constraints": [],
+        "scoring": [],
+        "special_conditions": []
+      },
+      "strategic_framework": {
+        "core_skills_required": [
+          "Ball trajectory prediction and interception",
+          "Optimal paddle positioning for defense and offense",
+          "Timing optimization for precise ball contact",
+          "Opponent movement pattern recognition",
+          "Error recovery after missed hits",
+          "Adaptive strategy based on game state"
+        ],
+        "winning_strategies": [
+          "Predictive positioning - move to where ball will be",
+          "Defensive positioning - stay centered when ball moving away",
+          "Aggressive positioning - force difficult returns",
+          "Pattern-based prediction - learn opponent tendencies",
+          "Momentum control - manage ball speed and angle"
+        ],
+        "success_patterns": [
+          "Early positioning beats reactive movement",
+          "Consistent prediction outperforms random actions",
+          "Adaptive timing based on ball velocity changes",
+          "Center positioning provides maximum coverage",
+          "Calm recovery after errors maintains performance"
+        ],
+        "failure_patterns": [],
+        "recommended_focus": [
+          "Ball position and velocity pattern recognition",
+          "Paddle movement optimization for interception",
+          "Reward correlation with positioning accuracy",
+          "Temporal sequence learning for prediction",
+          "Strategic positioning rules and principles",
+          "Opponent behavior pattern analysis",
+          "Error recovery strategy development",
+          "Win condition optimization approaches",
+          "Universal prediction and interception skills",
+          "Competitive strategy and adaptation patterns",
+          "Real-time decision making under pressure",
+          "Pattern recognition across dynamic environments"
+        ]
+      },
+      "strategies": [],
+      "lessons": [],
+      "tactical_knowledge": [],
+      "performance_patterns": [],
+      "neural_insights": [
+        {
+          "timestamp": 1751543356.509824,
+          "neural_skill_development": {},
+          "learning_trajectory": {
+            "trend": 0.0,
+            "stability": 0.0,
+            "acceleration": 0.0
+          },
+          "transfer_readiness": 0.0,
+          "action_reward_correlations": {}
+        }
+      ],
+      "transferable_skills": [
+        "trajectory_prediction",
+        "timing_optimization",
+        "strategic_positioning",
+        "pattern_recognition",
+        "error_recovery",
+        "adaptive_strategy",
+        "competitive_decision_making",
+        "real_time_responsiveness"
+      ]
+    }
+  },
+  "transfer_mappings": {
+    "strategy_abstractions": {},
+    "concept_translations": {},
+    "success_patterns": [],
+    "neural_pattern_mappings": {}
+  },
+  "symbolic_decision_history": [],
+  "metadata": {
+    "version": "2.2.0 - Persistent Environment Knowledge",
+    "agent_id": "test_agent",
+    "environments": [
+      "pong"
+    ],
+    "created": "2025-07-03T06:49:16.485179",
+    "last_updated": "2025-07-03T06:49:16.603140",
+    "transfer_learning_enabled": true,
+    "neural_symbolic_integration": true,
+    "environment_knowledge_integration": true
+  }
+}

@@ -1,0 +1,68 @@
+{
+  "general_knowledge": {
+    "transferable_strategies": [],
+    "meta_learning_principles": [],
+    "cross_environment_patterns": [],
+    "abstract_concepts": [],
+    "neural_symbolic_correlations": []
+  },
+  "environment_specific": {
+    "pong": {
+      "environment_profile": {
+        "environment_id": "pong",
+        "display_name": "Classic Pong",
+        "environment_type": "unknown",
+        "understanding_level": "basic",
+        "total_sessions": 2,
+        "first_encountered": 1751543245.8209713,
+        "last_updated": 1751543285.67463
+      },
+      "objectives": {
+        "primary": "Demonstrate neural-symbolic integration",
+        "secondary": [],
+        "victory_conditions": [],
+        "failure_conditions": []
+      },
+      "rules": {
+        "core_mechanics": [],
+        "constraints": [],
+        "scoring": [],
+        "special_conditions": []
+      },
+      "strategic_framework": {
+        "core_skills_required": [
+          "Neural pattern recognition",
+          "Symbolic strategy mapping"
+        ],
+        "winning_strategies": [],
+        "success_patterns": [],
+        "failure_patterns": [],
+        "recommended_focus": []
+      },
+      "strategies": [],
+      "lessons": [],
+      "tactical_knowledge": [],
+      "performance_patterns": [],
+      "neural_insights": []
+    }
+  },
+  "transfer_mappings": {
+    "strategy_abstractions": {},
+    "concept_translations": {},
+    "success_patterns": [],
+    "neural_pattern_mappings": {}
+  },
+  "symbolic_decision_history": [],
+  "metadata": {
+    "version": "2.2.0 - Persistent Environment Knowledge",
+    "agent_id": "demo_neural_symbolic_agent",
+    "environments": [
+      "pong"
+    ],
+    "created": "2025-07-03T06:47:25.820975",
+    "last_updated": "2025-07-03T06:48:05.674669",
+    "transfer_learning_enabled": true,
+    "neural_symbolic_integration": true,
+    "environment_knowledge_integration": true
+  }
+}

@@ -1,0 +1,3247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agent Byte SaaS - Train Your AI Agent</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f172a 100%);
+            color: #fff;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: bold;
+            background: linear-gradient(45deg, #ff4444, #ff8800, #00ff88, #66aaff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .page {
+            display: none;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            margin-bottom: 2rem;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, #66aaff, #00ff88);
+            color: #000;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 170, 255, 0.3);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .btn-danger {
+            background: linear-gradient(45deg, #ff4444, #ff6b6b);
+            color: #fff;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #ccc;
+            font-weight: 500;
+        }
+
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 0.75rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 6px;
+            color: #fff;
+            font-size: 1rem;
+        }
+
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: #66aaff;
+            box-shadow: 0 0 0 2px rgba(102, 170, 255, 0.2);
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .nav-tab {
+            padding: 0.75rem 1.5rem;
+            background: none;
+            border: none;
+            color: #ccc;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .nav-tab.active {
+            color: #66aaff;
+            border-bottom-color: #66aaff;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .error {
+            background: rgba(255, 68, 68, 0.2);
+            border: 1px solid #ff4444;
+            color: #ff8888;
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+        }
+
+        .success {
+            background: rgba(0, 255, 136, 0.2);
+            border: 1px solid #00ff88;
+            color: #88ffaa;
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #ccc;
+        }
+
+        /* Agents Grid */
+        .agents-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .agent-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .agent-card:hover {
+            transform: translateY(-4px);
+            border-color: #66aaff;
+            box-shadow: 0 8px 25px rgba(102, 170, 255, 0.2);
+        }
+
+        .agent-name {
+            font-size: 1.3rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            color: #00ff88;
+        }
+
+        .agent-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+            margin: 1rem 0;
+            font-size: 0.9rem;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.25rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .stat-label {
+            color: #ccc;
+        }
+
+        .stat-value {
+            color: #fff;
+            font-weight: bold;
+        }
+
+        .agent-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        /* Arena Styles */
+        .arena-nav {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .arena-section {
+            margin-top: 2rem;
+        }
+
+        .game-container {
+            text-align: center;
+        }
+
+        #gameCanvas, #spectatorCanvas {
+            border: 2px solid #66aaff;
+            border-radius: 8px;
+            margin: 1rem 0;
+            max-width: 100%;
+            height: auto;
+            box-shadow: 0 0 20px rgba(102, 170, 255, 0.3);
+        }
+
+        .game-controls {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin: 1rem 0;
+            flex-wrap: wrap;
+        }
+
+        .touch-controls {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin: 1rem 0;
+        }
+
+        .touch-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: rgba(102, 170, 255, 0.2);
+            border: 2px solid #66aaff;
+            color: #66aaff;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+
+        .touch-btn:active {
+            background: rgba(102, 170, 255, 0.5);
+            transform: scale(0.9);
+        }
+
+        .game-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 1rem;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .stat-card h3 {
+            color: #66aaff;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+        }
+
+        .stat-card .value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #00ff88;
+        }
+
+        /* Match Cards */
+        .match-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .match-card:hover {
+            border-color: #66aaff;
+            background: rgba(102, 170, 255, 0.1);
+        }
+
+        .matches-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .match-item {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .match-info {
+            flex: 1;
+        }
+
+        .match-result {
+            font-weight: bold;
+        }
+
+        .match-result.win {
+            color: #00ff88;
+        }
+
+        .match-result.loss {
+            color: #ff4444;
+        }
+
+        /* Leaderboard Styles */
+        .leaderboard-container {
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .leaderboard-header {
+            display: grid;
+            grid-template-columns: 80px 1fr 100px 100px 100px 100px;
+            gap: 1rem;
+            padding: 1rem;
+            background: rgba(102, 170, 255, 0.1);
+            font-weight: bold;
+            color: #66aaff;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 0.9rem;
+        }
+
+        .leaderboard-row {
+            display: grid;
+            grid-template-columns: 80px 1fr 100px 100px 100px 100px;
+            gap: 1rem;
+            padding: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.2s ease;
+            font-size: 0.9rem;
+        }
+
+        .leaderboard-row:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .leaderboard-row.my-agent {
+            background: rgba(0, 255, 136, 0.1);
+            border-left: 3px solid #00ff88;
+        }
+
+        .rank-column {
+            display: flex;
+            align-items: center;
+        }
+
+        .rank-badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 0.8rem;
+            min-width: 35px;
+            text-align: center;
+        }
+
+        .rank-badge.rank-gold {
+            background: linear-gradient(45deg, #ffd700, #ffed4e);
+            color: #000;
+        }
+
+        .rank-badge.rank-silver {
+            background: linear-gradient(45deg, #c0c0c0, #e5e5e5);
+            color: #000;
+        }
+
+        .rank-badge.rank-bronze {
+            background: linear-gradient(45deg, #cd7f32, #daa520);
+            color: #000;
+        }
+
+        .rank-badge.rank-default {
+            background: rgba(255, 255, 255, 0.1);
+            color: #ccc;
+        }
+
+        .agent-column {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .agent-name {
+            font-weight: bold;
+            color: #fff;
+            font-size: 1rem;
+        }
+
+        .owner-email {
+            font-size: 0.75rem;
+            color: #ccc;
+            opacity: 0.8;
+        }
+
+        .stats-column {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .elo-rating {
+            font-weight: bold;
+            color: #66aaff;
+            font-size: 1rem;
+        }
+
+        .win-loss {
+            color: #ccc;
+            font-size: 0.9rem;
+        }
+
+        .win-rate {
+            color: #00ff88;
+            font-weight: bold;
+        }
+
+        .win-streak {
+            color: #ffaa00;
+            font-weight: bold;
+        }
+
+        /* Tournament Styles */
+        .tournament-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .tournament-card:hover {
+            transform: translateY(-2px);
+            border-color: #66aaff;
+            box-shadow: 0 8px 25px rgba(102, 170, 255, 0.2);
+        }
+
+        .tournament-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .tournament-header h4 {
+            margin: 0;
+            font-size: 1.3rem;
+        }
+
+        .tournament-status {
+            padding: 0.25rem 0.75rem;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .tournament-info {
+            margin-bottom: 1rem;
+        }
+
+        .tournament-description {
+            color: #ccc;
+            margin: 0.5rem 0;
+            font-style: italic;
+        }
+
+        .tournament-stats {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            font-size: 0.9rem;
+            color: #ccc;
+            margin: 1rem 0;
+        }
+
+        .tournament-stat {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .tournament-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .filter-active {
+            background: linear-gradient(45deg, #66aaff, #00ff88) !important;
+            color: #000 !important;
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                padding: 1rem;
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .container {
+                padding: 1rem;
+            }
+
+            .agents-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .agent-stats {
+                grid-template-columns: 1fr;
+            }
+
+            .arena-nav {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .arena-nav .btn {
+                width: 100%;
+                max-width: 200px;
+            }
+
+            .leaderboard-header,
+            .leaderboard-row {
+                grid-template-columns: 60px 1fr 80px 80px;
+                gap: 0.5rem;
+                padding: 0.75rem 0.5rem;
+                font-size: 0.8rem;
+            }
+
+            .leaderboard-header .stats-column:nth-child(n+5),
+            .leaderboard-row .stats-column:nth-child(n+5) {
+                display: none;
+            }
+
+            .tournament-header {
+                flex-direction: column;
+                gap: 0.5rem;
+                align-items: flex-start;
+            }
+
+            .tournament-stats {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .tournament-actions {
+                flex-direction: column;
+                width: 100%;
+            }
+
+            .tournament-actions .btn {
+                width: 100%;
+            }
+
+            .game-controls {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+
+        /* Knowledge Tab Styles */
+        .knowledge-tab-content {
+            display: block;
+        }
+
+        .knowledge-tab-content.hidden {
+            display: none;
+        }
+
+        /* UPDATED CSS FOR CORRECTED BASIC INSTRUCTIONS SYSTEM */
+        /* Enhanced Knowledge List Styles */
+        .knowledge-list {
+            max-height: 250px;
+            overflow-y: auto;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            padding: 0.75rem;
+            background: rgba(255, 255, 255, 0.05);
+            margin-top: 0.5rem;
+        }
+
+        .knowledge-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            margin: 0.25rem 0;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            border-left: 4px solid transparent;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .knowledge-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateX(2px);
+        }
+
+        .knowledge-item.selected {
+            background: rgba(102, 170, 255, 0.2);
+            border-left-color: #66aaff;
+            transform: translateX(4px);
+        }
+
+        .knowledge-item-number {
+            font-weight: bold;
+            color: #66aaff;
+            min-width: 25px;
+            font-size: 0.9rem;
+        }
+
+        .knowledge-item-text {
+            flex: 1;
+            font-size: 0.95rem;
+            line-height: 1.4;
+        }
+
+        .empty-knowledge {
+            text-align: center;
+            color: #888;
+            font-style: italic;
+            padding: 2rem;
+        }
+
+        /* All basic instructions are now user-editable */
+        .knowledge-item.user-editable {
+            border-left-color: #66aaff;
+            background: rgba(102, 170, 255, 0.1);
+        }
+
+        .knowledge-item.user-editable:hover {
+            border-left-color: #88ccff;
+            background: rgba(102, 170, 255, 0.15);
+        }
+
+        /* For rewards tab items (different from basic instructions) */
+        .knowledge-item.user-added {
+            border-left-color: #00ff88;
+            background: rgba(0, 255, 136, 0.1);
+        }
+
+        .knowledge-item.environment-default {
+            border-left-color: #ffaa00;
+            background: rgba(255, 170, 0, 0.1);
+        }
+
+        /* CHECKBOX LAYOUT - Fixed positioning */
+        .knowledge-item-checkbox {
+            flex-shrink: 0;
+            width: 18px;
+            height: 18px;
+            margin-top: 2px;
+            cursor: pointer;
+            accent-color: #66aaff;
+        }
+
+        /* No more disabled checkboxes for basic instructions */
+        .knowledge-item-checkbox:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .knowledge-item-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            min-width: 0; /* Allows text to wrap properly - FIXES SQUISHING */
+        }
+
+        .knowledge-item-text {
+            font-size: 0.95rem;
+            line-height: 1.4;
+            cursor: pointer;
+            word-wrap: break-word;
+            margin: 0;
+        }
+
+        .knowledge-item-source {
+            font-size: 0.8rem;
+            color: #aaa;
+            font-style: italic;
+        }
+
+        .knowledge-item-actions {
+            flex-shrink: 0;
+            display: flex;
+            gap: 0.5rem;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .knowledge-item:hover .knowledge-item-actions {
+            opacity: 1;
+        }
+
+        .remove-btn {
+            background: #ff6b6b;
+            border: none;
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .remove-btn:hover {
+            background: #ff5252;
+        }
+
+        /* BULK ACTIONS SECTION */
+        .bulk-actions {
+            display: flex;
+            gap: 0.75rem;
+            margin: 1rem 0;
+            padding: 0.75rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            align-items: center;
+        }
+
+        .bulk-actions-info {
+            flex: 1;
+            font-size: 0.9rem;
+            color: #ccc;
+        }
+
+        .selection-counter {
+            background: rgba(102, 170, 255, 0.2);
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            border: 1px solid rgba(102, 170, 255, 0.3);
+        }
+
+        /* Status indicators - updated for new system */
+        .status-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 0.5rem;
+        }
+
+        .status-basic-instruction {
+            background: #66aaff;
+        }
+
+        .status-user-reward {
+            background: #00ff88;
+        }
+
+        .status-environment-reward {
+            background: #ffaa00;
+        }
+
+        .knowledge-list:empty::before {
+            content: "No basic instructions yet. Add instructions using the input above or load environment defaults.";
+            color: #888;
+            font-style: italic;
+            display: block;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        /* Enhanced button styles */
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Improved form styling */
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #66aaff;
+            font-weight: bold;
+        }
+
+        .form-group input[type="text"] {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+            font-size: 1rem;
+        }
+
+        .form-group input[type="text"]:focus {
+            outline: none;
+            border-color: #66aaff;
+            box-shadow: 0 0 0 2px rgba(102, 170, 255, 0.3);
+        }
+
+        /* Success/error message styling for consistency */
+        .message-success {
+            background: linear-gradient(45deg, #00ff88, #00cc66);
+            color: white;
+            padding: 0.75rem 1rem;
+            border-radius: 6px;
+            margin: 0.5rem 0;
+            font-weight: bold;
+        }
+
+        .message-error {
+            background: linear-gradient(45deg, #ff6b6b, #cc5555);
+            color: white;
+            padding: 0.75rem 1rem;
+            border-radius: 6px;
+            margin: 0.5rem 0;
+            font-weight: bold;
+        }
+
+        /* Reward Editor Styles */
+        .reward-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        .reward-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .reward-item label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+            color: #66aaff;
+        }
+
+        .reward-item input {
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="logo">🧠 Agent Byte SaaS</div>
+        <div class="user-info">
+            <span id="userEmail"></span>
+            <button class="btn btn-secondary" onclick="logout()">Logout</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Authentication Page -->
+        <div id="authPage" class="page active">
+            <div class="card">
+                <h1 style="text-align: center; margin-bottom: 2rem; background: linear-gradient(45deg, #ff4444, #ff8800, #00ff88, #66aaff); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                    Welcome to Agent Byte SaaS
+                </h1>
+                <p style="text-align: center; color: #ccc; margin-bottom: 2rem;">
+                    Train your own AI agents, compete in the arena, and watch them evolve!
+                </p>
+
+                <div style="max-width: 400px; margin: 0 auto;">
+                    <div class="nav-tabs">
+                        <button class="nav-tab active" onclick="showAuthTab('login')">Login</button>
+                        <button class="nav-tab" onclick="showAuthTab('register')">Register</button>
+                    </div>
+
+                    <!-- Login Form -->
+                    <div id="loginForm">
+                        <div class="form-group">
+                            <label for="loginEmail">Email</label>
+                            <input type="email" id="loginEmail" placeholder="your@email.com">
+                        </div>
+                        <div class="form-group">
+                            <label for="loginPassword">Password</label>
+                            <input type="password" id="loginPassword" placeholder="Your password">
+                        </div>
+                        <button class="btn" onclick="login()" style="width: 100%;">Login</button>
+                    </div>
+
+                    <!-- Register Form -->
+                    <div id="registerForm" style="display: none;">
+                        <div class="form-group">
+                            <label for="registerEmail">Email</label>
+                            <input type="email" id="registerEmail" placeholder="your@email.com">
+                        </div>
+                        <div class="form-group">
+                            <label for="registerPassword">Password</label>
+                            <input type="password" id="registerPassword" placeholder="At least 6 characters">
+                        </div>
+                        <div class="form-group">
+                            <label for="confirmPassword">Confirm Password</label>
+                            <input type="password" id="confirmPassword" placeholder="Confirm your password">
+                        </div>
+                        <button class="btn" onclick="register()" style="width: 100%;">Create Account</button>
+                    </div>
+                </div>
+
+                <div id="authError" class="error" style="display: none;"></div>
+                <div id="authSuccess" class="success" style="display: none;"></div>
+            </div>
+        </div>
+
+        <!-- Dashboard Page -->
+        <div id="dashboardPage" class="page">
+            <div class="nav-tabs">
+                <button class="nav-tab active" onclick="showTab('agents')">My Agents</button>
+                <button class="nav-tab" onclick="showTab('arena')">Arena</button>
+                <button class="nav-tab" onclick="showTab('leaderboard')">🏆 Leaderboard</button>
+                <button class="nav-tab" onclick="showTab('tournaments')">🏟️ Tournaments</button>
+                <button class="nav-tab" onclick="showTab('matches')">Match History</button>
+            </div>
+
+            <!-- Agents Tab -->
+            <div id="agentsTab" class="tab-content">
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                        <h2>My AI Agents</h2>
+                        <button class="btn" onclick="showCreateAgent()">+ Create Agent</button>
+                    </div>
+
+                    <div id="agentsList" class="agents-grid">
+                        <div class="loading">Loading your agents...</div>
+                    </div>
+                </div>
+
+                <!-- Create Agent Modal -->
+                <div id="createAgentModal" class="card" style="display: none; max-width: 400px; margin: 2rem auto;">
+                    <h3>Create New Agent</h3>
+                    <div class="create-agent-form">
+                        <div class="form-group">
+                            <label for="agentName">Agent Name</label>
+                            <input type="text" id="agentName" placeholder="Enter agent name" maxlength="50">
+                        </div>
+                        <div style="display: flex; gap: 1rem;">
+                            <button class="btn" onclick="createAgent()">Create Agent</button>
+                            <button class="btn btn-secondary" onclick="hideCreateAgent()">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Enhanced Agent Knowledge Editor Modal with Tabs -->
+                <div id="editAgentKnowledgeModal" class="card" style="display: none; max-width: 1000px; margin: 2rem auto;">
+                    <h3>Edit Agent Knowledge - <span id="editingAgentName">Agent Name</span></h3>
+                    
+                    <!-- Knowledge Editor Tabs -->
+                    <div class="nav-tabs" style="margin-bottom: 2rem;">
+                        <button class="nav-tab active" onclick="showKnowledgeTab('instructions')">📚 Basic Instructions</button>
+                        <button class="nav-tab" onclick="showKnowledgeTab('rewards')">🎯 Rewards & Learning</button>
+                    </div>
+
+                    <!-- Basic Instructions Tab -->
+                    <div id="instructionsTab" class="knowledge-tab-content">
+                        <!-- Primary Objective Section -->
+                        <div class="form-group">
+                            <label for="primaryObjective">Primary Objective</label>
+                            <input type="text" id="primaryObjective" placeholder="What should this agent try to achieve?" style="width: 100%;">
+                        </div>
+                        
+                        <!-- Game Rules Section -->
+                        <div class="form-group">
+                            <label>Game Rules <span style="font-size: 0.8em; color: #ccc;">(All rules can be removed or customized)</span></label>
+                            <input type="text" id="gameRulesInput" placeholder="Add a new game rule..." style="width: 100%; margin-bottom: 0.5rem;">
+                            <div id="gameRulesList" class="knowledge-list"></div>
+                        </div>
+                        
+                        <!-- Core Skills Section -->
+                        <div class="form-group">
+                            <label>Core Skills Required <span style="font-size: 0.8em; color: #ccc;">(All skills can be removed or customized)</span></label>
+                            <input type="text" id="coreSkillsInput" placeholder="Add a new core skill..." style="width: 100%; margin-bottom: 0.5rem;">
+                            <div id="coreSkillsList" class="knowledge-list"></div>
+                        </div>
+                        
+                        <!-- Success Patterns Section -->
+                        <div class="form-group">
+                            <label>Success Patterns <span style="font-size: 0.8em; color: #ccc;">(All patterns can be removed or customized)</span></label>
+                            <input type="text" id="successPatternsInput" placeholder="Add a success pattern..." style="width: 100%; margin-bottom: 0.5rem;">
+                            <div id="successPatternsList" class="knowledge-list"></div>
+                        </div>
+                        
+                        <!-- Failure Patterns Section -->
+                        <div class="form-group">
+                            <label>Failure Patterns <span style="font-size: 0.8em; color: #ccc;">(All patterns can be removed or customized)</span></label>
+                            <input type="text" id="failurePatternsInput" placeholder="Add a failure pattern..." style="width: 100%; margin-bottom: 0.5rem;">
+                            <div id="failurePatternsList" class="knowledge-list"></div>
+                        </div>
+                        
+                        <!-- Learning Focus Section -->
+                        <div class="form-group">
+                            <label>Learning Focus Areas <span style="font-size: 0.8em; color: #ccc;">(All focus areas can be removed or customized)</span></label>
+                            <input type="text" id="learningFocusInput" placeholder="Add a learning focus area..." style="width: 100%; margin-bottom: 0.5rem;">
+                            <div id="learningFocusList" class="knowledge-list"></div>
+                        </div>
+
+                        <!-- Transferable Skills Section -->
+                        <div class="form-group">
+                            <label>Transferable Skills <span style="font-size: 0.8em; color: #ccc;">(All skills can be removed or customized)</span></label>
+                            <input type="text" id="transferableSkillsInput" placeholder="Add a transferable skill..." style="width: 100%; margin-bottom: 0.5rem;">
+                            <div id="transferableSkillsList" class="knowledge-list"></div>
+                        </div>
+
+                        <!-- Bulk Actions Section -->
+                        <div class="bulk-actions" style="margin-top: 2rem;">
+                            <div class="bulk-actions-info">
+                                <span class="status-indicator status-basic-instruction"></span> Basic Instruction (All Removable)
+                                <span class="status-indicator status-user-reward"></span> User Added (Rewards Tab)
+                                <span class="status-indicator status-environment-reward"></span> Environment Default (Rewards Tab)
+                            </div>
+                            <div class="selection-counter" id="selectionCounter">0 instructions selected</div>
+                        </div>
+                    </div>
+
+                    <!-- Rewards & Learning Tab -->
+                    <div id="rewardsTab" class="knowledge-tab-content" style="display: none;">
+                        <!-- Reward Structure Section -->
+                        <div class="form-group">
+                            <label>Reward Structure</label>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                                <div>
+                                    <label for="hitReward">Ball Hit Reward</label>
+                                    <input type="number" id="hitReward" step="0.1" value="1.0" style="width: 100%;">
+                                </div>
+                                <div>
+                                    <label for="missReward">Ball Miss Penalty</label>
+                                    <input type="number" id="missReward" step="0.1" value="-0.5" style="width: 100%;">
+                                </div>
+                                <div>
+                                    <label for="scoreReward">Score Point Reward</label>
+                                    <input type="number" id="scoreReward" step="0.1" value="3.0" style="width: 100%;">
+                                </div>
+                                <div>
+                                    <label for="concededPenalty">Point Conceded Penalty</label>
+                                    <input type="number" id="concededPenalty" step="0.1" value="-0.5" style="width: 100%;">
+                                </div>
+                                <div>
+                                    <label for="winReward">Match Win Reward</label>
+                                    <input type="number" id="winReward" step="0.1" value="10.0" style="width: 100%;">
+                                </div>
+                                <div>
+                                    <label for="lossReward">Match Loss Penalty</label>
+                                    <input type="number" id="lossReward" step="0.1" value="-10.0" style="width: 100%;">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Learning Parameters Section -->
+                        <div class="form-group">
+                            <label>Learning Parameters</label>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+                                <div>
+                                    <label for="learningRate">Learning Rate</label>
+                                    <input type="number" id="learningRate" step="0.001" value="0.001" style="width: 100%;">
+                                </div>
+                                <div>
+                                    <label for="explorationRate">Exploration Rate</label>
+                                    <input type="number" id="explorationRate" step="0.01" value="0.3" style="width: 100%;">
+                                </div>
+                                <div>
+                                    <label for="discountFactor">Discount Factor</label>
+                                    <input type="number" id="discountFactor" step="0.01" value="0.99" style="width: 100%;">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Custom Rewards Section -->
+                        <div class="form-group">
+                            <label>Custom Reward Conditions</label>
+                            <input type="text" id="customRewardInput" placeholder="Add custom reward condition (e.g., 'Streak of 5 hits: +2.0')..." style="width: 100%; margin-bottom: 0.5rem;">
+                            <div id="customRewardsList" class="knowledge-list"></div>
+                        </div>
+
+                        <!-- Penalty Conditions Section -->
+                        <div class="form-group">
+                            <label>Custom Penalty Conditions</label>
+                            <input type="text" id="customPenaltyInput" placeholder="Add custom penalty condition (e.g., 'Poor positioning: -0.1')..." style="width: 100%; margin-bottom: 0.5rem;">
+                            <div id="customPenaltiesList" class="knowledge-list"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div style="display: flex; gap: 1rem; margin-top: 1rem; flex-wrap: wrap;">
+                        <button class="btn" onclick="saveAgentKnowledge()">💾 Save Changes</button>
+                        <button class="btn btn-danger" onclick="removeSelectedKnowledge()" id="removeSelectedBtn" disabled>🗑️ Remove Selected</button>
+                        <button class="btn btn-secondary" onclick="loadEnvironmentDefaults()">🔄 Load Environment Defaults</button>
+                        <button class="btn btn-secondary" onclick="resetAgentKnowledge()">↩️ Reset to Defaults Only</button>
+                        <button class="btn btn-secondary" onclick="hideEditAgentKnowledge()">✖️ Close</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Arena Tab -->
+            <div id="arenaTab" class="tab-content" style="display: none;">
+                <div class="card">
+                    <h2>Training Arena</h2>
+
+                    <!-- Arena Navigation -->
+                    <div class="arena-nav">
+                        <button class="btn" onclick="showArenaSection('training')">🎯 Train vs Agent</button>
+                        <button class="btn btn-secondary" onclick="showArenaSection('challenge')">⚔️ Agent vs Agent</button>
+                        <button class="btn btn-secondary" onclick="showArenaSection('spectate')">👀 Spectate</button>
+                    </div>
+
+                    <!-- Training Section -->
+                    <div id="trainingSection" class="arena-section">
+                        <h3>Train Against Your Agent</h3>
+                        <p style="color: #ccc; margin-bottom: 2rem;">Play against your agent to help it learn!</p>
+
+                        <div id="gameSetup">
+                            <div class="form-group" style="max-width: 300px; margin: 0 auto;">
+                                <label for="selectedAgent">Select Agent to Train</label>
+                                <select id="selectedAgent">
+                                    <option value="">Choose an agent...</option>
+                                </select>
+                            </div>
+                            <button class="btn" onclick="startTraining()" style="margin-top: 1rem;">Start Training Match</button>
+                        </div>
+                    </div>
+
+                    <!-- Agent Challenge Section -->
+                    <div id="challengeSection" class="arena-section" style="display: none;">
+                        <h3>Agent vs Agent Battle</h3>
+                        <p style="color: #ccc; margin-bottom: 2rem;">Watch your agents battle other players' agents!</p>
+
+                        <div id="agentChallengeSetup">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; max-width: 600px; margin: 0 auto;">
+                                <div class="form-group">
+                                    <label for="challengeMyAgent">Your Agent</label>
+                                    <select id="challengeMyAgent">
+                                        <option value="">Choose your agent...</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="challengeOpponentAgent">Opponent Agent</label>
+                                    <select id="challengeOpponentAgent">
+                                        <option value="">Choose opponent...</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div style="text-align: center; margin: 1rem 0;">
+                                <label style="display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                                    <input type="checkbox" id="challengePublic" checked>
+                                    Make this battle public for spectators
+                                </label>
+                            </div>
+                            <button class="btn" onclick="createAgentChallenge()">⚔️ Start Battle</button>
+                        </div>
+                    </div>
+
+                    <!-- Spectate Section -->
+                    <div id="spectateSection" class="arena-section" style="display: none;">
+                        <h3>Spectate Live Matches</h3>
+                        <p style="color: #ccc; margin-bottom: 2rem;">Watch other players' agents battle in real-time!</p>
+
+                        <div id="publicMatchesList">
+                            <div class="loading">Loading live matches...</div>
+                        </div>
+                    </div>
+
+                    <!-- Game Area (shared by all sections) -->
+                    <div id="gameArea" style="display: none;">
+                        <div class="game-container">
+                            <div id="gameScore" style="font-size: 1.5rem; margin: 1rem 0;">
+                                <span style="color: #00ff88;">Player 1: <span id="playerScore">0</span></span>
+                                <span style="margin: 0 2rem; color: #ccc;">vs</span>
+                                <span style="color: #ff4444;">Player 2: <span id="agentScore">0</span></span>
+                            </div>
+
+                            <canvas id="gameCanvas" width="800" height="400"></canvas>
+
+                            <div class="touch-controls">
+                                <div class="touch-btn" id="upBtn">↑</div>
+                                <div class="touch-btn" id="downBtn">↓</div>
+                            </div>
+
+                            <div class="game-controls">
+                                <button class="btn btn-danger" onclick="stopTraining()">Stop Match</button>
+                                <button class="btn btn-secondary" onclick="newGame()">New Game</button>
+                            </div>
+
+                            <div class="game-stats" id="gameStats">
+                                <!-- Stats will be populated by JS -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Leaderboard Tab -->
+            <div id="leaderboardTab" class="tab-content" style="display: none;">
+                <div class="card">
+                    <h2>🏆 Global Leaderboard</h2>
+                    <p style="color: #ccc; margin-bottom: 2rem;">Top agents ranked by ELO rating</p>
+
+                    <!-- Leaderboard Filters -->
+                    <div style="display: flex; gap: 1rem; margin-bottom: 2rem; justify-content: center; flex-wrap: wrap;">
+                        <select id="leaderboardEnvironment" style="padding: 0.5rem; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 6px; color: #fff;">
+                            <option value="pong">Pong</option>
+                            <option value="all">All Environments</option>
+                        </select>
+                        <select id="leaderboardSeason" style="padding: 0.5rem; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 6px; color: #fff;">
+                            <option value="current">Current Season</option>
+                            <option value="all-time">All Time</option>
+                        </select>
+                        <button class="btn btn-secondary" onclick="refreshLeaderboard()">🔄 Refresh</button>
+                    </div>
+
+                    <div id="leaderboardList" class="leaderboard-container">
+                        <div class="loading">Loading leaderboard...</div>
+                    </div>
+
+                    <!-- Leaderboard Stats Summary -->
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 2rem;">
+                        <div class="stat-card">
+                            <h3>Total Ranked Agents</h3>
+                            <div class="value" id="totalRankedAgents">0</div>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Average ELO</h3>
+                            <div class="value" id="averageELO">1200</div>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Top ELO</h3>
+                            <div class="value" id="topELO">1200</div>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Your Best Rank</h3>
+                            <div class="value" id="yourBestRank">-</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tournaments Tab -->
+            <div id="tournamentsTab" class="tab-content" style="display: none;">
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                        <h2>🏟️ Tournaments</h2>
+                        <button class="btn" onclick="showCreateTournament()">+ Create Tournament</button>
+                    </div>
+
+                    <!-- Tournament Filters -->
+                    <div style="display: flex; gap: 1rem; margin-bottom: 2rem; justify-content: center; flex-wrap: wrap;">
+                        <button class="btn btn-secondary" onclick="filterTournaments('all')">All</button>
+                        <button class="btn btn-secondary" onclick="filterTournaments('registration')">🔥 Open</button>
+                        <button class="btn btn-secondary" onclick="filterTournaments('active')">⚡ Active</button>
+                        <button class="btn btn-secondary" onclick="filterTournaments('completed')">🏆 Completed</button>
+                    </div>
+
+                    <div id="tournamentsList">
+                        <div class="loading">Loading tournaments...</div>
+                    </div>
+                </div>
+
+                <!-- Create Tournament Modal -->
+                <div id="createTournamentModal" class="card" style="display: none; max-width: 500px; margin: 2rem auto;">
+                    <h3>Create New Tournament</h3>
+                    <div class="form-group">
+                        <label for="tournamentName">Tournament Name</label>
+                        <input type="text" id="tournamentName" placeholder="Enter tournament name" maxlength="100">
+                    </div>
+                    <div class="form-group">
+                        <label for="tournamentDescription">Description (optional)</label>
+                        <textarea id="tournamentDescription" placeholder="Describe your tournament..." rows="3" style="resize: vertical;"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="tournamentMaxParticipants">Max Participants</label>
+                        <select id="tournamentMaxParticipants">
+                            <option value="4">4 agents</option>
+                            <option value="8" selected>8 agents</option>
+                            <option value="16">16 agents</option>
+                            <option value="32">32 agents</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="tournamentType">Tournament Type</label>
+                        <select id="tournamentType">
+                            <option value="elimination" selected>Single Elimination</option>
+                            <option value="round_robin">Round Robin</option>
+                        </select>
+                    </div>
+                    <div style="display: flex; gap: 1rem;">
+                        <button class="btn" onclick="createTournament()">Create Tournament</button>
+                        <button class="btn btn-secondary" onclick="hideCreateTournament()">Cancel</button>
+                    </div>
+                </div>
+
+                <!-- Join Tournament Modal -->
+                <div id="joinTournamentModal" class="card" style="display: none; max-width: 400px; margin: 2rem auto;">
+                    <h3>Join Tournament</h3>
+                    <input type="hidden" id="joinTournamentId">
+                    <div class="form-group">
+                        <label for="joinTournamentAgent">Select Your Agent</label>
+                        <select id="joinTournamentAgent">
+                            <option value="">Choose an agent...</option>
+                        </select>
+                    </div>
+                    <div style="display: flex; gap: 1rem;">
+                        <button class="btn" onclick="joinTournament()">Join Tournament</button>
+                        <button class="btn btn-secondary" onclick="hideJoinTournament()">Cancel</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Match History Tab -->
+            <div id="matchesTab" class="tab-content" style="display: none;">
+                <div class="card">
+                    <h2>Match History</h2>
+                    <div id="matchesList" class="matches-list">
+                        <div class="loading">Loading match history...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Include the main JavaScript -->
+    <script>
+// Fixed Agent Byte SaaS Platform - Frontend JavaScript
+// Enhanced with proper game state management and canvas rendering
+
+// Global variables
+let socket = null;
+let currentUser = null;
+let currentMatch = null;
+let gameRunning = false;
+let agents = [];
+let matches = [];
+let publicMatches = [];
+let currentSpectatingMatch = null;
+
+// Game state
+let gameCanvas = null;
+let gameContext = null;
+let lastGameState = null;
+
+// Initialize app
+document.addEventListener('DOMContentLoaded', function() {
+    initializeApp();
+    setupEventListeners();
+});
+
+async function initializeApp() {
+    try {
+        console.log('🚀 Initializing Agent Byte SaaS Platform...');
+
+        // Check if user is already logged in
+        const response = await fetch('/api/me');
+        if (response.ok) {
+            const data = await response.json();
+            currentUser = data.user;
+            showDashboard();
+        } else {
+            showAuth();
+        }
+    } catch (error) {
+        console.error('Error initializing app:', error);
+        showAuth();
+    }
+}
+
+function setupEventListeners() {
+    // Keyboard controls for game
+    document.addEventListener('keydown', function(e) {
+        if (!gameRunning) return;
+
+        if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
+            movePaddle(-1);
+        } else if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') {
+            movePaddle(1);
+        }
+    });
+
+    // Touch controls setup
+    setTimeout(() => {
+        const upBtn = document.getElementById('upBtn');
+        const downBtn = document.getElementById('downBtn');
+
+        if (upBtn && downBtn) {
+            upBtn.addEventListener('mousedown', () => startPaddleMovement(-1));
+            downBtn.addEventListener('mousedown', () => startPaddleMovement(1));
+            upBtn.addEventListener('mouseup', stopPaddleMovement);
+            downBtn.addEventListener('mouseup', stopPaddleMovement);
+
+            // Touch events for mobile
+            upBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                startPaddleMovement(-1);
+            });
+            downBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                startPaddleMovement(1);
+            });
+            upBtn.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                stopPaddleMovement();
+            });
+            downBtn.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                stopPaddleMovement();
+            });
+        }
+    }, 100);
+
+    // Enter key support for forms
+    document.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            if (document.getElementById('loginForm') && document.getElementById('loginForm').style.display !== 'none') {
+                login();
+            } else if (document.getElementById('registerForm') && document.getElementById('registerForm').style.display !== 'none') {
+                register();
+            } else if (document.getElementById('createAgentModal') && document.getElementById('createAgentModal').style.display !== 'none') {
+                createAgent();
+            } else if (document.getElementById('editAgentKnowledgeModal') && document.getElementById('editAgentKnowledgeModal').style.display !== 'none') {
+                // Enter key is handled individually by input fields for adding items
+                // Do nothing here to avoid interference
+            }
+        }
+    });
+
+    // ESC key support for closing modals
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            if (document.getElementById('createAgentModal') && document.getElementById('createAgentModal').style.display !== 'none') {
+                hideCreateAgent();
+            } else if (document.getElementById('editAgentKnowledgeModal') && document.getElementById('editAgentKnowledgeModal').style.display !== 'none') {
+                hideEditAgentKnowledge();
+            }
+        }
+    });
+}
+
+// Fixed paddle movement
+let paddleMoving = 0;
+let paddleInterval = null;
+
+function startPaddleMovement(direction) {
+    if (paddleMoving !== direction) {
+        stopPaddleMovement(); // Stop any existing movement
+        paddleMoving = direction;
+
+        // Move immediately
+        movePaddle(direction);
+
+        // Continue moving at intervals
+        paddleInterval = setInterval(() => {
+            if (gameRunning && paddleMoving !== 0) {
+                movePaddle(paddleMoving);
+            }
+        }, 50); // 20 FPS for smoother movement
+    }
+}
+
+function stopPaddleMovement() {
+    paddleMoving = 0;
+    if (paddleInterval) {
+        clearInterval(paddleInterval);
+        paddleInterval = null;
+    }
+}
+
+function movePaddle(direction) {
+    if (socket && currentMatch && gameRunning) {
+        socket.emit('move_paddle', {
+            match_id: currentMatch.id,
+            direction: direction
+        });
+    }
+}
+
+// Authentication functions (keeping existing ones)
+function showAuthTab(tab) {
+    document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+    event.target.classList.add('active');
+
+    if (tab === 'login') {
+        document.getElementById('loginForm').style.display = 'block';
+        document.getElementById('registerForm').style.display = 'none';
+    } else {
+        document.getElementById('loginForm').style.display = 'none';
+        document.getElementById('registerForm').style.display = 'block';
+    }
+}
+
+async function login() {
+    const email = document.getElementById('loginEmail').value;
+    const password = document.getElementById('loginPassword').value;
+
+    if (!email || !password) {
+        showError('Please enter email and password');
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            currentUser = data.user;
+            showSuccess('Login successful!');
+            setTimeout(() => showDashboard(), 1000);
+        } else {
+            showError(data.error || 'Login failed');
+        }
+    } catch (error) {
+        showError('Network error. Please try again.');
+    }
+}
+
+async function register() {
+    const email = document.getElementById('registerEmail').value;
+    const password = document.getElementById('registerPassword').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+
+    if (!email || !password || !confirmPassword) {
+        showError('Please fill in all fields');
+        return;
+    }
+
+    if (password !== confirmPassword) {
+        showError('Passwords do not match');
+        return;
+    }
+
+    if (password.length < 6) {
+        showError('Password must be at least 6 characters');
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            currentUser = data.user;
+            showSuccess('Account created successfully!');
+            setTimeout(() => showDashboard(), 1000);
+        } else {
+            showError(data.error || 'Registration failed');
+        }
+    } catch (error) {
+        showError('Network error. Please try again.');
+    }
+}
+
+async function logout() {
+    try {
+        await fetch('/api/logout', { method: 'POST' });
+        currentUser = null;
+        if (socket) {
+            socket.disconnect();
+            socket = null;
+        }
+        showAuth();
+    } catch (error) {
+        console.error('Logout error:', error);
+    }
+}
+
+// UI Navigation
+function showAuth() {
+    document.getElementById('authPage').classList.add('active');
+    document.getElementById('dashboardPage').classList.remove('active');
+    hideError();
+    hideSuccess();
+}
+
+function showDashboard() {
+    document.getElementById('authPage').classList.remove('active');
+    document.getElementById('dashboardPage').classList.add('active');
+    document.getElementById('userEmail').textContent = currentUser.email;
+
+    // Initialize WebSocket connection
+    initializeSocket();
+
+    // Load dashboard data
+    loadAgents();
+    loadMatches();
+}
+
+function showTab(tab) {
+    // Update nav tabs
+    document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+    event.target.classList.add('active');
+
+    // Show correct tab content
+    document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
+
+    const tabElement = document.getElementById(tab + 'Tab');
+    if (tabElement) {
+        tabElement.style.display = 'block';
+    }
+
+    // Load tab-specific data
+    if (tab === 'agents') {
+        loadAgents();
+    } else if (tab === 'matches') {
+        loadMatches();
+    } else if (tab === 'arena') {
+        loadAgentSelector();
+        loadPublicMatches();
+        setTimeout(() => showArenaSection('training'), 100);
+    } else if (tab === 'leaderboard') {
+        loadLeaderboard();
+    } else if (tab === 'tournaments') {
+        loadTournaments();
+    }
+}
+
+// Arena section navigation
+function showArenaSection(section) {
+    // Hide all arena sections
+    document.querySelectorAll('.arena-section').forEach(s => s.style.display = 'none');
+
+    // Update nav buttons
+    document.querySelectorAll('.arena-nav .btn').forEach(btn => {
+        btn.className = 'btn btn-secondary';
+    });
+
+    // Show selected section and update button
+    if (section === 'training') {
+        const trainingSection = document.getElementById('trainingSection');
+        if (trainingSection) {
+            trainingSection.style.display = 'block';
+            if (event && event.target) event.target.className = 'btn';
+            loadAgentSelector();
+        }
+    } else if (section === 'challenge') {
+        const challengeSection = document.getElementById('challengeSection');
+        if (challengeSection) {
+            challengeSection.style.display = 'block';
+            if (event && event.target) event.target.className = 'btn';
+            loadAgentSelectors();
+        }
+    } else if (section === 'spectate') {
+        const spectateSection = document.getElementById('spectateSection');
+        if (spectateSection) {
+            spectateSection.style.display = 'block';
+            if (event && event.target) event.target.className = 'btn';
+            loadPublicMatches();
+        }
+    }
+}
+
+// Fixed WebSocket functions
+function initializeSocket() {
+    if (socket) return;
+
+    console.log('🔌 Initializing WebSocket connection...');
+    socket = io();
+
+    socket.on('connect', function() {
+        console.log('✅ Connected to server');
+    });
+
+    socket.on('disconnect', function() {
+        console.log('❌ Disconnected from server');
+        gameRunning = false;
+    });
+
+    socket.on('error', function(data) {
+        console.error('Socket error:', data);
+        showError(data.message);
+    });
+
+    // Fixed game event handlers
+    socket.on('game_update', function(data) {
+        console.log('🎮 Game update received:', data);
+        updateGameDisplay(data);
+        lastGameState = data;
+    });
+
+    socket.on('game_started', function(data) {
+        console.log('🚀 Game started:', data);
+        gameRunning = true;
+        showSuccess('Game started!');
+    });
+
+    socket.on('game_stopped', function(data) {
+        console.log('🛑 Game stopped:', data);
+        gameRunning = false;
+    });
+
+    socket.on('game_ended', function(data) {
+        console.log('🏁 Game ended:', data);
+        gameRunning = false;
+        handleGameEnd(data);
+    });
+
+    // Agent vs Agent events
+    socket.on('agent_vs_agent_started', function(data) {
+        gameRunning = true;
+        showSuccess(`Agent battle started: ${data.agent1_name} vs ${data.agent2_name}`);
+        console.log('🤖 Agent vs Agent battle started:', data);
+    });
+
+    // Spectator events
+    socket.on('spectator_update', function(data) {
+        if (currentSpectatingMatch) {
+            updateSpectatorDisplay(data);
+        }
+    });
+
+    socket.on('spectator_match_started', function(data) {
+        showSuccess(`Match started: ${data.agent1_name} vs ${data.agent2_name}`);
+    });
+
+    socket.on('spectator_game_ended', function(data) {
+        if (currentSpectatingMatch) {
+            handleSpectatorGameEnd(data);
+        }
+    });
+
+    socket.on('spectating_started', function(data) {
+        console.log('👀 Started spectating match:', data.match_id);
+        currentSpectatingMatch = data.match_id;
+    });
+
+    socket.on('spectating_stopped', function(data) {
+        console.log('👀 Stopped spectating match:', data.match_id);
+        currentSpectatingMatch = null;
+    });
+}
+
+// Agent management functions (keeping existing ones)
+async function loadAgents() {
+    try {
+        const response = await fetch('/api/agents');
+        const data = await response.json();
+
+        if (response.ok) {
+            agents = data.agents;
+            displayAgents();
+        } else {
+            showError('Failed to load agents');
+        }
+    } catch (error) {
+        showError('Network error loading agents');
+    }
+}
+
+function displayAgents() {
+    const container = document.getElementById('agentsList');
+    if (!container) return;
+
+    if (agents.length === 0) {
+        container.innerHTML = `
+            <div style="text-align: center; color: #ccc; grid-column: 1 / -1;">
+                <h3>No agents yet!</h3>
+                <p>Create your first AI agent to get started.</p>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = agents.map(agent => `
+        <div class="agent-card">
+            <div class="agent-name">${agent.name}</div>
+            <div style="color: #ccc; font-size: 0.9rem; margin-bottom: 1rem;">
+                Environment: ${agent.environment} | Created: ${new Date(agent.created_at).toLocaleDateString()}
+            </div>
+
+            <div class="agent-stats">
+                <div class="stat-item">
+                    <span class="stat-label">Wins:</span>
+                    <span class="stat-value">${agent.stats.wins}</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Losses:</span>
+                    <span class="stat-value">${agent.stats.losses}</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Win Rate:</span>
+                    <span class="stat-value">${agent.stats.win_rate}%</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">ELO Rating:</span>
+                    <span class="stat-value">${agent.stats.elo_rating}</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Training Time:</span>
+                    <span class="stat-value">${agent.stats.training_time}h</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Last Trained:</span>
+                    <span class="stat-value">${agent.last_trained ? new Date(agent.last_trained).toLocaleDateString() : 'Never'}</span>
+                </div>
+            </div>
+
+            <div class="agent-actions">
+                <button class="btn" onclick="trainAgent('${agent.id}')">Train</button>
+                <button class="btn btn-secondary" onclick="editAgent('${agent.id}')">Edit</button>
+                <button class="btn btn-danger" onclick="deleteAgent('${agent.id}')">Delete</button>
+            </div>
+        </div>
+    `).join('');
+}
+
+function showCreateAgent() {
+    const modal = document.getElementById('createAgentModal');
+    if (modal) {
+        modal.style.display = 'block';
+        const agentNameInput = document.getElementById('agentName');
+        if (agentNameInput) agentNameInput.focus();
+    }
+}
+
+function hideCreateAgent() {
+    const modal = document.getElementById('createAgentModal');
+    if (modal) {
+        modal.style.display = 'none';
+        const agentNameInput = document.getElementById('agentName');
+        if (agentNameInput) agentNameInput.value = '';
+    }
+}
+
+async function createAgent() {
+    const name = document.getElementById('agentName').value.trim();
+
+    if (!name) {
+        showError('Please enter an agent name');
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/agents', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            showSuccess('Agent created successfully!');
+            hideCreateAgent();
+            loadAgents();
+        } else {
+            showError(data.error || 'Failed to create agent');
+        }
+    } catch (error) {
+        showError('Network error creating agent');
+    }
+}
+
+async function deleteAgent(agentId) {
+    if (!confirm('Are you sure you want to delete this agent? This cannot be undone.')) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/agents/${agentId}`, {
+            method: 'DELETE'
+        });
+
+        if (response.ok) {
+            showSuccess('Agent deleted successfully');
+            loadAgents();
+        } else {
+            showError('Failed to delete agent');
+        }
+    } catch (error) {
+        showError('Network error deleting agent');
+    }
+}
+
+function trainAgent(agentId) {
+    showTab('arena');
+    setTimeout(() => {
+        const selector = document.getElementById('selectedAgent');
+        if (selector) selector.value = agentId;
+        startTraining();
+    }, 200);
+}
+
+// Enhanced Knowledge Editor JavaScript
+
+let currentKnowledge = {};
+let currentAgentId = '';
+let environmentDefaults = {};
+
+// Tab Management
+function showKnowledgeTab(tabName) {
+    // Update tab buttons
+    document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
+    event.target.classList.add('active');
+    
+    // Show/hide tab content
+    document.querySelectorAll('.knowledge-tab-content').forEach(content => {
+        content.style.display = 'none';
+    });
+    
+    if (tabName === 'instructions') {
+        document.getElementById('instructionsTab').style.display = 'block';
+    } else if (tabName === 'rewards') {
+        document.getElementById('rewardsTab').style.display = 'block';
+    }
+}
+
+// Enhanced Agent Knowledge Loading
+async function editAgent(agentId) {
+    try {
+        // Load agent knowledge AND environment defaults
+        const [knowledgeResponse, defaultsResponse] = await Promise.all([
+            fetch(`/api/agents/${agentId}/knowledge`),
+            fetch(`/api/agents/${agentId}/environment-defaults`)
+        ]);
+        
+        if (!knowledgeResponse.ok) {
+            throw new Error('Failed to load agent knowledge');
+        }
+        
+        const knowledgeData = await knowledgeResponse.json();
+        currentKnowledge = knowledgeData.knowledge || knowledgeData;
+        currentAgentId = agentId;
+        
+        // Load environment defaults if available
+        if (defaultsResponse.ok) {
+            environmentDefaults = await defaultsResponse.json();
+        }
+        
+        // Find agent name
+        const agent = agents.find(a => a.id === agentId);
+        const agentName = agent ? agent.name : 'Unknown Agent';
+        
+        // Populate modal
+        document.getElementById('editingAgentName').textContent = agentName;
+        
+        // Extract knowledge data (check both pong and arena_pong keys for compatibility)
+        const pongKnowledge = currentKnowledge.environment_specific?.arena_pong || 
+                              currentKnowledge.environment_specific?.pong || {};
+        
+        // Load Basic Instructions Tab
+        loadInstructionsTab(pongKnowledge);
+        
+        // Load Rewards Tab
+        loadRewardsTab(pongKnowledge);
+        
+        // Setup input handlers
+        setupKnowledgeInputHandlers();
+        
+        // Setup auto-save for primary objective
+        setupPrimaryObjectiveHandler();
+        
+        // Store agent ID for saving
+        document.getElementById('editAgentKnowledgeModal').dataset.agentId = agentId;
+        
+        // Show modal
+        document.getElementById('editAgentKnowledgeModal').style.display = 'block';
+        document.getElementById('primaryObjective').focus();
+        
+    } catch (error) {
+        showError('Failed to load agent knowledge: ' + error.message);
+    }
+}
+
+// SIMPLIFIED SELECTABLE KNOWLEDGE ITEMS
+// Keep existing structure but make items simply selectable
+
+// Global variables
+let selectedItems = new Set();
+
+// Load basic instructions from knowledge.json
+function loadInstructionsTab(pongKnowledge) {
+    // Load primary objective
+    const objective = pongKnowledge.objectives?.primary || '';
+    document.getElementById('primaryObjective').value = objective;
+    
+    // Load each knowledge category
+    const categories = [
+        {
+            id: 'gameRules',
+            knowledgePath: 'rules.core_mechanics',
+            listId: 'gameRulesList'
+        },
+        {
+            id: 'coreSkills', 
+            knowledgePath: 'strategic_framework.core_skills_required',
+            listId: 'coreSkillsList'
+        },
+        {
+            id: 'successPatterns',
+            knowledgePath: 'strategic_framework.success_patterns',
+            listId: 'successPatternsList'
+        },
+        {
+            id: 'failurePatterns',
+            knowledgePath: 'strategic_framework.failure_patterns',
+            listId: 'failurePatternsList'
+        },
+        {
+            id: 'learningFocus',
+            knowledgePath: 'strategic_framework.recommended_focus',
+            listId: 'learningFocusList'
+        },
+        {
+            id: 'transferableSkills',
+            knowledgePath: 'transferable_skills',
+            listId: 'transferableSkillsList'
+        }
+    ];
+    
+    categories.forEach(category => {
+        // Get current items from knowledge.json
+        const currentItems = getNestedValue(pongKnowledge, category.knowledgePath) || [];
+        
+        // Render as selectable knowledge list
+        renderKnowledgeList(category.listId, currentItems, category.id);
+    });
+    
+    // Update remove button state
+    updateRemoveButtonState();
+}
+
+function loadRewardsTab(pongKnowledge) {
+    // Load reward parameters (with defaults)
+    const rewards = pongKnowledge.reward_structure || {};
+    
+    document.getElementById('hitReward').value = rewards.ball_hit || 1.0;
+    document.getElementById('missReward').value = rewards.ball_miss || -0.5;
+    document.getElementById('scoreReward').value = rewards.score_point || 3.0;
+    document.getElementById('concededPenalty').value = rewards.concede_point || -0.5;
+    document.getElementById('winReward').value = rewards.match_win || 10.0;
+    document.getElementById('lossReward').value = rewards.match_loss || -10.0;
+    
+    // Load learning parameters
+    const learning = pongKnowledge.learning_parameters || {};
+    
+    document.getElementById('learningRate').value = learning.learning_rate || 0.001;
+    document.getElementById('explorationRate').value = learning.exploration_rate || 0.3;
+    document.getElementById('discountFactor').value = learning.discount_factor || 0.99;
+    
+    // Load custom rewards and penalties
+    const customRewards = pongKnowledge.custom_rewards || [];
+    const customPenalties = pongKnowledge.custom_penalties || [];
+    
+    renderKnowledgeList('customRewardsList', customRewards.map(r => ({ text: r, source: 'user' })), 'customRewards');
+    renderKnowledgeList('customPenaltiesList', customPenalties.map(p => ({ text: p, source: 'user' })), 'customPenalties');
+}
+
+// Render knowledge list with selectable items
+function renderKnowledgeList(listId, items, category) {
+    const listContainer = document.getElementById(listId);
+    if (!listContainer) return;
+    
+    listContainer.innerHTML = '';
+    listContainer.className = 'knowledge-list';
+    
+    if (!Array.isArray(items) || items.length === 0) {
+        listContainer.innerHTML = '<div class="empty-knowledge">No items yet. Use the input above to add some.</div>';
+        return;
+    }
+    
+    items.forEach((item, index) => {
+        const itemText = typeof item === 'string' ? item : item.text || item;
+        const itemId = `${category}-${index}`;
+        
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'knowledge-item';
+        itemDiv.dataset.category = category;
+        itemDiv.dataset.index = index;
+        itemDiv.dataset.itemId = itemId;
+        
+        itemDiv.innerHTML = `
+            <div class="knowledge-item-number">${index + 1}.</div>
+            <div class="knowledge-item-text">${itemText}</div>
+        `;
+        
+        // Make item selectable
+        itemDiv.addEventListener('click', function() {
+            toggleItemSelection(this);
+        });
+        
+        listContainer.appendChild(itemDiv);
+    });
+}
+
+// Toggle item selection
+function toggleItemSelection(itemElement) {
+    const itemId = itemElement.dataset.itemId;
+    
+    if (selectedItems.has(itemId)) {
+        // Deselect
+        selectedItems.delete(itemId);
+        itemElement.classList.remove('selected');
+    } else {
+        // Select
+        selectedItems.add(itemId);
+        itemElement.classList.add('selected');
+    }
+    
+    updateRemoveButtonState();
+}
+
+// Update remove button state
+function updateRemoveButtonState() {
+    const removeBtn = document.getElementById('removeSelectedBtn');
+    if (removeBtn) {
+        removeBtn.disabled = selectedItems.size === 0;
+        removeBtn.textContent = selectedItems.size > 0 ? 
+            `Remove Selected (${selectedItems.size})` : 
+            'Remove Selected';
+    }
+}
+
+// Add new knowledge item
+async function addKnowledgeItem(category) {
+    const input = document.getElementById(`${category}Input`);
+    const text = input.value.trim();
+    
+    if (!text) return;
+    
+    try {
+        // Get current items from knowledge
+        const pongKnowledge = currentKnowledge.environment_specific?.arena_pong || {};
+        let currentItems = [];
+        
+        switch(category) {
+            case 'gameRules':
+                currentItems = [...(pongKnowledge.rules?.core_mechanics || [])];
+                break;
+            case 'coreSkills':
+                currentItems = [...(pongKnowledge.strategic_framework?.core_skills_required || [])];
+                break;
+            case 'successPatterns':
+                currentItems = [...(pongKnowledge.strategic_framework?.success_patterns || [])];
+                break;
+            case 'failurePatterns':
+                currentItems = [...(pongKnowledge.strategic_framework?.failure_patterns || [])];
+                break;
+            case 'learningFocus':
+                currentItems = [...(pongKnowledge.strategic_framework?.recommended_focus || [])];
+                break;
+            case 'transferableSkills':
+                currentItems = [...(pongKnowledge.transferable_skills || [])];
+                break;
+        }
+        
+        // Add new item
+        currentItems.push(text);
+        
+        // Update knowledge
+        await updateKnowledgeCategory(category, currentItems);
+        
+        // Re-render list
+        const listIdMap = {
+            'gameRules': 'gameRulesList',
+            'coreSkills': 'coreSkillsList',
+            'successPatterns': 'successPatternsList',
+            'failurePatterns': 'failurePatternsList',
+            'learningFocus': 'learningFocusList',
+            'transferableSkills': 'transferableSkillsList'
+        };
+        
+        renderKnowledgeList(listIdMap[category], currentItems, category);
+        
+        // Clear input
+        input.value = '';
+        
+        showSuccess('Item added successfully!');
+        
+    } catch (error) {
+        showError('Failed to add item: ' + error.message);
+    }
+}
+
+// Remove selected knowledge items
+async function removeSelectedKnowledge() {
+    if (selectedItems.size === 0) {
+        showError('No items selected for removal');
+        return;
+    }
+    
+    if (!confirm(`Are you sure you want to remove ${selectedItems.size} selected item(s)?`)) {
+        return;
+    }
+    
+    try {
+        // Group selected items by category
+        const itemsByCategory = {};
+        
+        selectedItems.forEach(itemId => {
+            const [category, index] = itemId.split('-');
+            if (!itemsByCategory[category]) {
+                itemsByCategory[category] = [];
+            }
+            itemsByCategory[category].push(parseInt(index));
+        });
+        
+        // Remove items from each category
+        for (const category of Object.keys(itemsByCategory)) {
+            const indices = itemsByCategory[category].sort((a, b) => b - a); // Reverse order
+            
+            // Get current items
+            const pongKnowledge = currentKnowledge.environment_specific?.arena_pong || {};
+            let currentItems = [];
+            
+            switch(category) {
+                case 'gameRules':
+                    currentItems = [...(pongKnowledge.rules?.core_mechanics || [])];
+                    break;
+                case 'coreSkills':
+                    currentItems = [...(pongKnowledge.strategic_framework?.core_skills_required || [])];
+                    break;
+                case 'successPatterns':
+                    currentItems = [...(pongKnowledge.strategic_framework?.success_patterns || [])];
+                    break;
+                case 'failurePatterns':
+                    currentItems = [...(pongKnowledge.strategic_framework?.failure_patterns || [])];
+                    break;
+                case 'learningFocus':
+                    currentItems = [...(pongKnowledge.strategic_framework?.recommended_focus || [])];
+                    break;
+                case 'transferableSkills':
+                    currentItems = [...(pongKnowledge.transferable_skills || [])];
+                    break;
+            }
+            
+            // Remove items in reverse order
+            indices.forEach(index => {
+                currentItems.splice(index, 1);
+            });
+            
+            // Update knowledge
+            await updateKnowledgeCategory(category, currentItems);
+            
+            // Re-render list
+            const listIdMap = {
+                'gameRules': 'gameRulesList',
+                'coreSkills': 'coreSkillsList',
+                'successPatterns': 'successPatternsList',
+                'failurePatterns': 'failurePatternsList',
+                'learningFocus': 'learningFocusList',
+                'transferableSkills': 'transferableSkillsList'
+            };
+            
+            renderKnowledgeList(listIdMap[category], currentItems, category);
+        }
+        
+        // Clear selections
+        selectedItems.clear();
+        updateRemoveButtonState();
+        
+        showSuccess('Selected items removed successfully!');
+        
+    } catch (error) {
+        showError('Failed to remove selected items: ' + error.message);
+    }
+}
+
+// Update knowledge category in knowledge.json structure
+async function updateKnowledgeCategory(category, items) {
+    if (!currentAgentId) return;
+    
+    // Build knowledge update
+    let knowledgeUpdate = {
+        ...currentKnowledge,
+        environment_specific: {
+            ...currentKnowledge.environment_specific,
+            arena_pong: {
+                ...currentKnowledge.environment_specific?.arena_pong
+            }
+        }
+    };
+    
+    const pongKnowledge = knowledgeUpdate.environment_specific.arena_pong;
+    
+    // Update the specific category
+    switch(category) {
+        case 'gameRules':
+            if (!pongKnowledge.rules) pongKnowledge.rules = {};
+            pongKnowledge.rules.core_mechanics = items;
+            break;
+        case 'coreSkills':
+            if (!pongKnowledge.strategic_framework) pongKnowledge.strategic_framework = {};
+            pongKnowledge.strategic_framework.core_skills_required = items;
+            break;
+        case 'successPatterns':
+            if (!pongKnowledge.strategic_framework) pongKnowledge.strategic_framework = {};
+            pongKnowledge.strategic_framework.success_patterns = items;
+            break;
+        case 'failurePatterns':
+            if (!pongKnowledge.strategic_framework) pongKnowledge.strategic_framework = {};
+            pongKnowledge.strategic_framework.failure_patterns = items;
+            break;
+        case 'learningFocus':
+            if (!pongKnowledge.strategic_framework) pongKnowledge.strategic_framework = {};
+            pongKnowledge.strategic_framework.recommended_focus = items;
+            break;
+        case 'transferableSkills':
+            pongKnowledge.transferable_skills = items;
+            break;
+    }
+    
+    // Update current knowledge
+    currentKnowledge = knowledgeUpdate;
+    
+    // Auto-save to server
+    await autoSaveKnowledge();
+}
+
+// Load environment defaults
+async function loadEnvironmentDefaults() {
+    if (!currentAgentId) {
+        showError('No agent selected');
+        return;
+    }
+    
+    if (!confirm('Load environment defaults? This will add back any default items you may have removed.')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/agents/${currentAgentId}/load-environment-defaults`, {
+            method: 'POST'
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to load environment defaults');
+        }
+        
+        // Reload the knowledge editor
+        await editAgent(currentAgentId);
+        
+        showSuccess('Environment defaults loaded successfully!');
+        
+    } catch (error) {
+        showError('Failed to load environment defaults: ' + error.message);
+    }
+}
+
+// Reset agent knowledge
+async function resetAgentKnowledge() {
+    if (!currentAgentId) {
+        showError('No agent selected for resetting');
+        return;
+    }
+    
+    if (!confirm('Are you sure you want to reset all knowledge to environment defaults only? This will remove ALL custom items.')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/agents/${currentAgentId}/knowledge/reset`, {
+            method: 'POST'
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to reset knowledge');
+        }
+        
+        // Reload the knowledge editor
+        await editAgent(currentAgentId);
+        
+        showSuccess('Agent knowledge reset to environment defaults successfully!');
+        
+    } catch (error) {
+        showError('Failed to reset agent knowledge: ' + error.message);
+    }
+}
+
+// Auto-save primary objective
+async function autoSavePrimaryObjective() {
+    const objective = document.getElementById('primaryObjective').value.trim();
+    
+    if (!currentKnowledge.environment_specific) currentKnowledge.environment_specific = {};
+    if (!currentKnowledge.environment_specific.arena_pong) currentKnowledge.environment_specific.arena_pong = {};
+    if (!currentKnowledge.environment_specific.arena_pong.objectives) currentKnowledge.environment_specific.arena_pong.objectives = {};
+    
+    currentKnowledge.environment_specific.arena_pong.objectives.primary = objective;
+    
+    await autoSaveKnowledge();
+}
+
+// Auto-save knowledge
+async function autoSaveKnowledge() {
+    if (!currentAgentId) return;
+    
+    try {
+        const response = await fetch(`/api/agents/${currentAgentId}/knowledge`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ knowledge: currentKnowledge })
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to save knowledge');
+        }
+        
+    } catch (error) {
+        console.error('Auto-save failed:', error.message);
+    }
+}
+
+// Setup input handlers
+function setupKnowledgeInputHandlers() {
+    const categories = ['gameRules', 'coreSkills', 'successPatterns', 'failurePatterns', 'learningFocus', 'transferableSkills'];
+    
+    categories.forEach(category => {
+        const input = document.getElementById(`${category}Input`);
+        if (input) {
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addKnowledgeItem(category);
+                }
+            });
+        }
+    });
+}
+
+function setupPrimaryObjectiveHandler() {
+    const primaryObjective = document.getElementById('primaryObjective');
+    if (primaryObjective) {
+        primaryObjective.addEventListener('blur', autoSavePrimaryObjective);
+        primaryObjective.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.target.blur();
+            }
+        });
+    }
+}
+
+function hideEditAgentKnowledge() {
+    document.getElementById('editAgentKnowledgeModal').style.display = 'none';
+    // Clear event listeners
+    const primaryObjective = document.getElementById('primaryObjective');
+    if (primaryObjective) {
+        primaryObjective.removeEventListener('blur', autoSavePrimaryObjective);
+    }
+}
+
+// Helper function
+function getNestedValue(obj, path) {
+    return path.split('.').reduce((current, key) => current && current[key], obj);
+}
+
+// Training functions
+function loadAgentSelector() {
+    const selector = document.getElementById('selectedAgent');
+    if (!selector) return;
+
+    selector.innerHTML = '<option value="">Choose an agent...</option>';
+
+    agents.forEach(agent => {
+        const option = document.createElement('option');
+        option.value = agent.id;
+        option.textContent = `${agent.name} (${agent.stats.wins}W/${agent.stats.losses}L)`;
+        selector.appendChild(option);
+    });
+}
+
+function loadAgentSelectors() {
+    const myAgentSelector = document.getElementById('challengeMyAgent');
+    const opponentSelector = document.getElementById('challengeOpponentAgent');
+
+    if (myAgentSelector) {
+        myAgentSelector.innerHTML = '<option value="">Choose your agent...</option>';
+        agents.forEach(agent => {
+            const option = document.createElement('option');
+            option.value = agent.id;
+            option.textContent = `${agent.name} (ELO: ${agent.stats.elo_rating || 1200})`;
+            myAgentSelector.appendChild(option);
+        });
+    }
+
+    if (opponentSelector) {
+        opponentSelector.innerHTML = '<option value="">Loading opponents...</option>';
+        loadPublicAgents();
+    }
+}
+
+async function loadPublicAgents() {
+    try {
+        const response = await fetch('/api/agents/public');
+        if (response.ok) {
+            const data = await response.json();
+            const opponentSelector = document.getElementById('challengeOpponentAgent');
+
+            if (opponentSelector) {
+                opponentSelector.innerHTML = '<option value="">Choose opponent...</option>';
+                data.agents.forEach(agent => {
+                    const option = document.createElement('option');
+                    option.value = agent.id;
+                    option.textContent = `${agent.name} (${agent.owner_email}) - ELO: ${agent.stats.elo_rating || 1200}`;
+                    opponentSelector.appendChild(option);
+                });
+            }
+        }
+    } catch (error) {
+        console.error('Error loading public agents:', error);
+    }
+}
+
+async function loadPublicMatches() {
+    try {
+        const response = await fetch('/api/arena/public-matches');
+        const data = await response.json();
+
+        if (response.ok) {
+            publicMatches = data.matches;
+            displayPublicMatches();
+        }
+    } catch (error) {
+        console.error('Error loading public matches:', error);
+    }
+}
+
+function displayPublicMatches() {
+    const container = document.getElementById('publicMatchesList');
+    if (!container) return;
+
+    if (publicMatches.length === 0) {
+        container.innerHTML = `
+            <div style="text-align: center; color: #ccc; padding: 1rem;">
+                No public matches currently active
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = publicMatches.map(match => `
+        <div class="match-card">
+            <div class="match-info">
+                <h4>${match.agent1_name} vs ${match.agent2_name || 'User'}</h4>
+                <div style="font-size: 0.9rem; color: #ccc;">
+                    ${match.environment} • ${match.spectator_count} spectators
+                </div>
+            </div>
+            <button class="btn btn-secondary" onclick="spectateMatch('${match.id}')">
+                👀 Spectate
+            </button>
+        </div>
+    `).join('');
+}
+
+// Fixed training functions
+async function startTraining() {
+    console.log('🚀 Starting training...');
+
+    const agentId = document.getElementById('selectedAgent').value;
+
+    if (!agentId) {
+        showError('Please select an agent to train');
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/matches', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ agent_id: agentId })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            currentMatch = data.match;
+            console.log('✅ Match created:', currentMatch);
+
+            // Join the match room
+            socket.emit('join_match', { match_id: currentMatch.id });
+
+            // Show game interface
+            const gameSetup = document.getElementById('gameSetup');
+            const gameArea = document.getElementById('gameArea');
+            if (gameSetup) gameSetup.style.display = 'none';
+            if (gameArea) gameArea.style.display = 'block';
+
+            // Initialize canvas
+            initializeGameCanvas();
+
+            // Show touch controls for user vs agent
+            const touchControls = document.querySelector('.touch-controls');
+            if (touchControls) touchControls.style.display = 'flex';
+
+            // Start the game
+            setTimeout(() => {
+                console.log('🎯 Emitting start_game event...');
+                socket.emit('start_game', { match_id: currentMatch.id });
+            }, 500);
+
+        } else {
+            showError(data.error || 'Failed to start training');
+        }
+    } catch (error) {
+        console.error('❌ Training start error:', error);
+        showError('Network error starting training');
+    }
+}
+
+function initializeGameCanvas() {
+    gameCanvas = document.getElementById('gameCanvas');
+    if (gameCanvas) {
+        gameContext = gameCanvas.getContext('2d');
+        console.log('🎨 Game canvas initialized');
+
+        // Clear canvas initially
+        gameContext.fillStyle = '#000';
+        gameContext.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
+
+        // Draw "Waiting for game..." message
+        gameContext.fillStyle = '#fff';
+        gameContext.font = '24px Arial';
+        gameContext.textAlign = 'center';
+        gameContext.fillText('Waiting for game to start...', gameCanvas.width / 2, gameCanvas.height / 2);
+    }
+}
+
+async function createAgentChallenge() {
+    const myAgentId = document.getElementById('challengeMyAgent').value;
+    const opponentAgentId = document.getElementById('challengeOpponentAgent').value;
+    const isPublic = document.getElementById('challengePublic').checked;
+
+    if (!myAgentId || !opponentAgentId) {
+        showError('Please select both agents');
+        return;
+    }
+
+    if (myAgentId === opponentAgentId) {
+        showError('Cannot challenge the same agent');
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/arena/challenge', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                my_agent_id: myAgentId,
+                opponent_agent_id: opponentAgentId,
+                is_public: isPublic
+            })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            currentMatch = data.match;
+            showSuccess('Challenge created! Starting battle...');
+
+            socket.emit('join_match', { match_id: currentMatch.id });
+            setTimeout(() => {
+                socket.emit('start_agent_vs_agent', { match_id: currentMatch.id });
+                showAgentVsAgentInterface();
+            }, 1000);
+        } else {
+            showError(data.error || 'Failed to create challenge');
+        }
+    } catch (error) {
+        showError('Network error creating challenge');
+    }
+}
+
+function showAgentVsAgentInterface() {
+    const gameSetup = document.getElementById('gameSetup');
+    const challengeSetup = document.getElementById('agentChallengeSetup');
+    const gameArea = document.getElementById('gameArea');
+
+    if (gameSetup) gameSetup.style.display = 'none';
+    if (challengeSetup) challengeSetup.style.display = 'none';
+    if (gameArea) gameArea.style.display = 'block';
+
+    // Initialize canvas for agent vs agent
+    initializeGameCanvas();
+
+    // Hide touch controls for agent vs agent
+    const touchControls = document.querySelector('.touch-controls');
+    if (touchControls) touchControls.style.display = 'none';
+
+    // Add spectator note
+    const existingNote = document.getElementById('spectatorNote');
+    if (existingNote) existingNote.remove();
+
+    const spectatorNote = document.createElement('div');
+    spectatorNote.id = 'spectatorNote';
+    spectatorNote.innerHTML = `
+        <div style="text-align: center; background: rgba(102, 170, 255, 0.1); padding: 1rem; border-radius: 8px; margin: 1rem 0;">
+            <h3 style="color: #66aaff; margin-bottom: 0.5rem;">🤖 Agent vs Agent Battle</h3>
+            <p style="color: #ccc;">Watch as your agents battle using their learned strategies!</p>
+        </div>
+    `;
+    if (gameArea) gameArea.insertBefore(spectatorNote, gameArea.firstChild);
+}
+
+function spectateMatch(matchId) {
+    if (!socket) {
+        showError('Not connected to server');
+        return;
+    }
+
+    currentSpectatingMatch = matchId;
+    socket.emit('spectate_match', { match_id: matchId });
+    showSpectatorInterface(matchId);
+}
+
+function showSpectatorInterface(matchId) {
+    const gameSetup = document.getElementById('gameSetup');
+    const challengeSetup = document.getElementById('agentChallengeSetup');
+
+    if (gameSetup) gameSetup.style.display = 'none';
+    if (challengeSetup) challengeSetup.style.display = 'none';
+
+    // Remove existing spectator interface
+    const existingInterface = document.getElementById('spectatorInterface');
+    if (existingInterface) existingInterface.remove();
+
+    const spectatorDiv = document.createElement('div');
+    spectatorDiv.id = 'spectatorInterface';
+    spectatorDiv.innerHTML = `
+        <div style="text-align: center; background: rgba(255, 170, 0, 0.1); padding: 1rem; border-radius: 8px; margin: 1rem 0;">
+            <h3 style="color: #ffaa00; margin-bottom: 0.5rem;">👀 Spectating Match</h3>
+            <p style="color: #ccc;">You are watching a live match</p>
+            <button class="btn btn-secondary" onclick="stopSpectating()">Stop Spectating</button>
+        </div>
+        <canvas id="spectatorCanvas" width="800" height="400" style="border: 2px solid #ffaa00; border-radius: 8px; max-width: 100%;"></canvas>
+        <div id="spectatorStats" class="game-stats"></div>
+    `;
+
+    const arenaCard = document.querySelector('#arenaTab .card');
+    if (arenaCard) arenaCard.appendChild(spectatorDiv);
+
+    const gameArea = document.getElementById('gameArea');
+    if (gameArea) gameArea.style.display = 'block';
+
+    // Initialize spectator canvas
+    const spectatorCanvas = document.getElementById('spectatorCanvas');
+    if (spectatorCanvas) {
+        const ctx = spectatorCanvas.getContext('2d');
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, spectatorCanvas.width, spectatorCanvas.height);
+        ctx.fillStyle = '#ffaa00';
+        ctx.font = '24px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('Connecting to match...', spectatorCanvas.width / 2, spectatorCanvas.height / 2);
+    }
+}
+
+function stopSpectating() {
+    if (currentSpectatingMatch) {
+        socket.emit('stop_spectating', {
+            match_id: currentSpectatingMatch,
+            spectator_id: `user_${currentUser.id}`
+        });
+
+        const spectatorInterface = document.getElementById('spectatorInterface');
+        if (spectatorInterface) {
+            spectatorInterface.remove();
+        }
+
+        const gameSetup = document.getElementById('gameSetup');
+        const gameArea = document.getElementById('gameArea');
+        if (gameSetup) gameSetup.style.display = 'block';
+        if (gameArea) gameArea.style.display = 'none';
+
+        currentSpectatingMatch = null;
+    }
+}
+
+function stopTraining() {
+    if (currentMatch) {
+        socket.emit('stop_game', { match_id: currentMatch.id });
+        endTrainingSession();
+    }
+}
+
+function newGame() {
+    if (currentMatch) {
+        gameRunning = false;
+        socket.emit('start_game', { match_id: currentMatch.id });
+    }
+}
+
+function endTrainingSession() {
+    const gameSetup = document.getElementById('gameSetup');
+    const gameArea = document.getElementById('gameArea');
+    const spectatorNote = document.getElementById('spectatorNote');
+
+    if (gameSetup) gameSetup.style.display = 'block';
+    if (gameArea) gameArea.style.display = 'none';
+    if (spectatorNote) spectatorNote.remove();
+
+    currentMatch = null;
+    gameRunning = false;
+
+    loadAgents();
+    loadMatches();
+}
+
+// Fixed game display functions
+function updateGameDisplay(gameState) {
+    if (!gameCanvas || !gameContext) {
+        console.warn('⚠️ Canvas not initialized, attempting to initialize...');
+        initializeGameCanvas();
+        if (!gameCanvas || !gameContext) {
+            console.error('❌ Failed to initialize canvas');
+            return;
+        }
+    }
+
+    try {
+        // Clear canvas
+        gameContext.fillStyle = '#000';
+        gameContext.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
+
+        // Draw center line
+        gameContext.strokeStyle = '#333';
+        gameContext.lineWidth = 2;
+        gameContext.setLineDash([10, 10]);
+        gameContext.beginPath();
+        gameContext.moveTo(gameCanvas.width / 2, 0);
+        gameContext.lineTo(gameCanvas.width / 2, gameCanvas.height);
+        gameContext.stroke();
+        gameContext.setLineDash([]);
+
+        // Draw ball
+        if (gameState.ball) {
+            gameContext.fillStyle = '#66aaff';
+            gameContext.shadowColor = '#66aaff';
+            gameContext.shadowBlur = 10;
+            gameContext.beginPath();
+            gameContext.arc(gameState.ball.x, gameState.ball.y, gameState.ball.size / 2, 0, Math.PI * 2);
+            gameContext.fill();
+            gameContext.shadowBlur = 0;
+        }
+
+        // Draw player paddle (left side)
+        if (gameState.player_paddle) {
+            gameContext.fillStyle = '#00ff88';
+            gameContext.shadowColor = '#00ff88';
+            gameContext.shadowBlur = 5;
+            gameContext.fillRect(10, gameState.player_paddle.y, 10, gameState.player_paddle.height);
+            gameContext.shadowBlur = 0;
+        }
+
+        // Draw AI paddle (right side)
+        if (gameState.ai_paddle) {
+            gameContext.fillStyle = '#ff4444';
+            gameContext.shadowColor = '#ff4444';
+            gameContext.shadowBlur = 5;
+            gameContext.fillRect(gameCanvas.width - 20, gameState.ai_paddle.y, 10, gameState.ai_paddle.height);
+            gameContext.shadowBlur = 0;
+        }
+
+        // Update scores
+        if (gameState.scores) {
+            const playerScore = document.getElementById('playerScore');
+            const agentScore = document.getElementById('agentScore');
+            if (playerScore) playerScore.textContent = gameState.scores.player || 0;
+            if (agentScore) agentScore.textContent = gameState.scores.ai || 0;
+        }
+
+        // Update stats
+        if (gameState.ai_stats) {
+            updateGameStats(gameState.ai_stats);
+        }
+
+        // Draw game over message
+        if (gameState.game_over && gameState.winner) {
+            gameContext.fillStyle = 'rgba(0, 0, 0, 0.7)';
+            gameContext.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
+
+            gameContext.fillStyle = gameState.winner === 'Agent Byte' ? '#ff4444' : '#00ff88';
+            gameContext.font = 'bold 36px Arial';
+            gameContext.textAlign = 'center';
+            gameContext.fillText(
+                gameState.winner === 'Agent Byte' ? 'AGENT WINS!' : 'YOU WIN!',
+                gameCanvas.width / 2,
+                gameCanvas.height / 2
+            );
+
+            gameContext.fillStyle = '#fff';
+            gameContext.font = '18px Arial';
+            gameContext.fillText('Click "New Game" to play again', gameCanvas.width / 2, gameCanvas.height / 2 + 40);
+        }
+
+        console.log('🎨 Game display updated successfully');
+
+    } catch (error) {
+        console.error('❌ Error updating game display:', error);
+    }
+}
+
+function updateGameStats(stats) {
+    const container = document.getElementById('gameStats');
+    if (!container) return;
+
+    container.innerHTML = `
+        <div class="stat-card">
+            <h3>Training Progress</h3>
+            <div class="value">${stats.training_steps || 0}</div>
+        </div>
+        <div class="stat-card">
+            <h3>Win Rate</h3>
+            <div class="value">${stats.win_rate || 0}%</div>
+        </div>
+        <div class="stat-card">
+            <h3>Match Reward</h3>
+            <div class="value">${(stats.match_reward || 0).toFixed(1)}</div>
+        </div>
+        <div class="stat-card">
+            <h3>Exploration</h3>
+            <div class="value">${((stats.exploration_rate || 0) * 100).toFixed(0)}%</div>
+        </div>
+        <div class="stat-card">
+            <h3>Hit Streak</h3>
+            <div class="value">${stats.consecutive_hits || 0}</div>
+        </div>
+        <div class="stat-card">
+            <h3>Knowledge Decisions</h3>
+            <div class="value">${stats.symbolic_decisions_made || 0}</div>
+        </div>
+    `;
+}
+
+// Spectator functions
+function updateSpectatorDisplay(gameState) {
+    const canvas = document.getElementById('spectatorCanvas');
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+
+    try {
+        // Clear canvas
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Draw spectator border
+        ctx.strokeStyle = '#ffaa00';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(0, 0, canvas.width, canvas.height);
+
+        // Draw game elements (same as regular game display)
+        if (gameState.ball) {
+            ctx.fillStyle = '#66aaff';
+            ctx.beginPath();
+            ctx.arc(gameState.ball.x, gameState.ball.y, gameState.ball.size / 2, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        if (gameState.player_paddle) {
+            ctx.fillStyle = '#00ff88';
+            ctx.fillRect(10, gameState.player_paddle.y, 10, gameState.player_paddle.height);
+        }
+
+        if (gameState.ai_paddle) {
+            ctx.fillStyle = '#ff4444';
+            ctx.fillRect(canvas.width - 20, gameState.ai_paddle.y, 10, gameState.ai_paddle.height);
+        }
+
+        // Update spectator stats
+        if (gameState.agent1_stats || gameState.agent2_stats) {
+            updateSpectatorStats(gameState);
+        }
+
+        // Draw spectator overlay
+        ctx.fillStyle = 'rgba(255, 170, 0, 0.8)';
+        ctx.font = '16px Arial';
+        ctx.textAlign = 'right';
+        ctx.fillText(`👀 ${gameState.spectator_count || 0} spectators`, canvas.width - 10, 25);
+
+    } catch (error) {
+        console.error('❌ Error updating spectator display:', error);
+    }
+}
+
+function updateSpectatorStats(gameState) {
+    const container = document.getElementById('spectatorStats');
+    if (!container) return;
+
+    const agent1Stats = gameState.agent1_stats || {};
+    const agent2Stats = gameState.agent2_stats || {};
+
+    container.innerHTML = `
+        <div class="stat-card">
+            <h3>Agent 1 Stats</h3>
+            <div class="value">ELO: ${agent1Stats.elo_rating || 1200}</div>
+            <div style="font-size: 0.8rem; color: #ccc;">
+                Training: ${agent1Stats.training_steps || 0} steps
+            </div>
+        </div>
+        <div class="stat-card">
+            <h3>Match Progress</h3>
+            <div class="value">${gameState.scores?.ai || 0} - ${gameState.scores?.player || 0}</div>
+        </div>
+        <div class="stat-card">
+            <h3>Agent 2 Stats</h3>
+            <div class="value">ELO: ${agent2Stats.elo_rating || 1200}</div>
+            <div style="font-size: 0.8rem; color: #ccc;">
+                Training: ${agent2Stats.training_steps || 0} steps
+            </div>
+        </div>
+        <div class="stat-card">
+            <h3>Spectators</h3>
+            <div class="value">${gameState.spectator_count || 0}</div>
+        </div>
+    `;
+}
+
+function handleSpectatorGameEnd(data) {
+    showSuccess(`Match ended: ${data.winner} wins! Duration: ${data.match_duration}min`);
+    loadPublicMatches(); // Refresh the list
+}
+
+// Enhanced game end handler
+function handleGameEnd(data) {
+    gameRunning = false;
+    console.log('🏁 Game ended:', data);
+
+    if (data.is_tournament_match) {
+        showSuccess(`Tournament match complete: ${data.winner} wins! Duration: ${data.match_duration}min`);
+    } else if (data.winner === 'agent1' && currentMatch && currentMatch.agent2_id) {
+        showSuccess('Your agent wins the battle! ELO ratings updated.');
+    } else if (data.winner === 'agent2' && currentMatch && currentMatch.agent2_id) {
+        showSuccess('Opponent agent wins! Better luck next time.');
+    } else {
+        // Original user vs agent logic
+        if (data.winner === 'agent1') {
+            showSuccess('Agent wins! It\'s learning from your gameplay.');
+        } else {
+            showSuccess('You win! Great job training your agent.');
+        }
+    }
+
+    // Update agents list and refresh data
+    setTimeout(() => {
+        loadAgents();
+        loadMatches();
+    }, 1000);
+}
+
+// Match history functions
+async function loadMatches() {
+    try {
+        const response = await fetch('/api/matches');
+        const data = await response.json();
+
+        if (response.ok) {
+            matches = data.matches;
+            displayMatches();
+        } else {
+            showError('Failed to load match history');
+        }
+    } catch (error) {
+        showError('Network error loading matches');
+    }
+}
+
+function displayMatches() {
+    const container = document.getElementById('matchesList');
+    if (!container) return;
+
+    if (matches.length === 0) {
+        container.innerHTML = `
+            <div style="text-align: center; color: #ccc; padding: 2rem;">
+                <h3>No matches yet!</h3>
+                <p>Start training your agents to see match history here.</p>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = matches.map(match => {
+        const date = new Date(match.started_at).toLocaleDateString();
+        const time = new Date(match.started_at).toLocaleTimeString();
+        const duration = match.completed_at ?
+            Math.round((new Date(match.completed_at) - new Date(match.started_at)) / 1000 / 60) : 0;
+
+        let resultClass = '';
+        let resultText = '';
+
+        if (match.status === 'completed') {
+            if (match.winner === 'user') {
+                resultClass = 'win';
+                resultText = 'YOU WON';
+            } else if (match.winner === 'agent1') {
+                resultClass = 'loss';
+                resultText = 'AGENT WON';
+            }
+        } else {
+            resultText = match.status.toUpperCase();
+        }
+
+        const finalScore = match.final_score ?
+            `${match.final_score.user || 0} - ${match.final_score.agent1 || 0}` :
+            'N/A';
+
+        return `
+            <div class="match-item">
+                <div class="match-info">
+                    <div style="font-weight: bold; margin-bottom: 0.25rem;">
+                        vs ${match.agent1_name}
+                    </div>
+                    <div style="font-size: 0.9rem; color: #ccc;">
+                        ${date} ${time} • ${duration}min • Score: ${finalScore}
+                    </div>
+                </div>
+                <div class="match-result ${resultClass}">
+                    ${resultText}
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+// Utility functions
+function showError(message) {
+    console.error('Error:', message);
+    const errorDiv = document.getElementById('authError');
+    if (errorDiv) {
+        errorDiv.textContent = message;
+        errorDiv.style.display = 'block';
+        setTimeout(() => hideError(), 5000);
+    } else {
+        // Create temporary error message
+        const tempError = document.createElement('div');
+        tempError.className = 'error';
+        tempError.textContent = message;
+        tempError.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 10000; max-width: 300px;';
+        document.body.appendChild(tempError);
+        setTimeout(() => tempError.remove(), 5000);
+    }
+}
+
+function hideError() {
+    const errorDiv = document.getElementById('authError');
+    if (errorDiv) {
+        errorDiv.style.display = 'none';
+    }
+}
+
+function showSuccess(message) {
+    console.log('Success:', message);
+    const successDiv = document.getElementById('authSuccess');
+    if (successDiv) {
+        successDiv.textContent = message;
+        successDiv.style.display = 'block';
+        setTimeout(() => hideSuccess(), 5000);
+    } else {
+        // Create temporary success message
+        const tempSuccess = document.createElement('div');
+        tempSuccess.className = 'success';
+        tempSuccess.textContent = message;
+        tempSuccess.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 10000; max-width: 300px;';
+        document.body.appendChild(tempSuccess);
+        setTimeout(() => tempSuccess.remove(), 5000);
+    }
+}
+
+function hideSuccess() {
+    const successDiv = document.getElementById('authSuccess');
+    if (successDiv) {
+        successDiv.style.display = 'none';
+    }
+}
+    </script>
+</body>
+</html>

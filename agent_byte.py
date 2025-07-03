@@ -1,4 +1,4 @@
-# agent_byte.py - Enhanced Modular Agent with Environment Integration
+# agent_byte.py - Enhanced Modular Transferable AI Agent with Neural-Symbolic Integration
 import numpy as np
 import json
 import time
@@ -6,411 +6,666 @@ import random
 import os
 from collections import deque
 import datetime
+from typing import Dict, Optional, List, Any, Tuple
+import uuid
 
-# Import the dual brain system and knowledge system
-from dual_brain_system import DualBrainAgent, AgentBrain, AgentKnowledge
-from knowledge_system import SymbolicDecisionMaker
+# Import the enhanced dual brain system with neural-symbolic integration
+from dual_brain_system import EnhancedDualBrainAgent, EnhancedAgentBrain, EnhancedAgentKnowledge
 
 
-class MatchLogger:
-    """Match logging system for tracking performance across games"""
+class StandardizedNetwork:
+    """
+    Standardized Neural Network Architecture for Transfer Learning
 
-    def __init__(self, log_filename='agent_matches.json'):
-        self.log_file = log_filename
+    Enhanced with better neural pattern tracking for symbolic interpretation
+    """
+
+    def __init__(self, environment_id: str, action_size: int, learning_rate=0.001):
+        self.environment_id = environment_id
+        self.action_size = action_size
+        self.learning_rate = learning_rate
+
+        # STANDARDIZED ARCHITECTURE - 256 input for all environments
+        self.input_size = 256
+        self.core_sizes = [512, 256, 128]  # Transferable core layers
+        self.adapter_size = 64  # Environment adaptation layer
+
+        # Initialize network layers
+        self._initialize_core_layers()
+        self._initialize_adapter_layer()
+        self._initialize_output_layer()
+
+        # Enhanced metadata for neural-symbolic integration
+        self.metadata = {
+            'environment_id': environment_id,
+            'architecture_version': 'Agent Byte v2.1 - Neural-Symbolic Integration',
+            'created_at': time.time(),
+            'training_domains': [environment_id],
+            'skill_tags': [],
+            'transfer_readiness': 0.0,
+            'core_layers_frozen': False,
+            'transfer_source': None,
+            'neural_symbolic_compatible': True,
+            'pattern_tracking_enabled': True
+        }
+
+        # Pattern tracking for symbolic interpretation
+        self.activation_patterns = []
+        self.decision_patterns = []
+        self.reward_correlations = {}
+
+        print(f"🧠 Enhanced Standardized Network initialized for {environment_id}")
+        print(f"   Architecture: {self.input_size}→{self.core_sizes}→{self.adapter_size}→{self.action_size}")
+        print(f"   Neural-Symbolic Integration: Ready")
+
+    def _initialize_core_layers(self):
+        """Initialize transferable core feature layers with pattern tracking"""
+        self.core_layers = []
+
+        layer_sizes = [self.input_size] + self.core_sizes
+        for i in range(len(layer_sizes) - 1):
+            layer = {
+                'weights': np.random.randn(layer_sizes[i], layer_sizes[i + 1]) * np.sqrt(2.0 / layer_sizes[i]),
+                'biases': np.zeros(layer_sizes[i + 1]),
+                'layer_type': 'core',
+                'transferable': True,
+                'learning_history': [],
+                'activation_patterns': [],  # NEW: Track activation patterns
+                'pattern_significance': 0.0  # NEW: Track pattern importance
+            }
+            self.core_layers.append(layer)
+
+        print(
+            f"   ✅ Enhanced core layers initialized: {len(self.core_layers)} transferable layers with pattern tracking")
+
+    def _initialize_adapter_layer(self):
+        """Initialize environment-specific adapter layer"""
+        core_output_size = self.core_sizes[-1]
+
+        self.adapter_layer = {
+            'weights': np.random.randn(core_output_size, self.adapter_size) * np.sqrt(2.0 / core_output_size),
+            'biases': np.zeros(self.adapter_size),
+            'layer_type': 'adapter',
+            'transferable': False,
+            'environment_specific': True
+        }
+
+        print(f"   🔧 Enhanced adapter layer initialized: {core_output_size}→{self.adapter_size}")
+
+    def _initialize_output_layer(self):
+        """Initialize environment-specific output layer"""
+        self.output_layer = {
+            'weights': np.random.randn(self.adapter_size, self.action_size) * np.sqrt(2.0 / self.adapter_size),
+            'biases': np.zeros(self.action_size),
+            'layer_type': 'output',
+            'transferable': False,
+            'environment_specific': True
+        }
+
+        print(f"   🎯 Enhanced output layer initialized: {self.adapter_size}→{self.action_size}")
+
+    def normalize_input(self, raw_state: np.ndarray) -> np.ndarray:
+        """Enhanced normalize any environment state to standard 256-dimension input"""
+        if len(raw_state) >= 256:
+            # Truncate if too large
+            normalized = raw_state[:256]
+        else:
+            # Pad with zeros if too small, and add enhanced positional encoding
+            normalized = np.zeros(256)
+            normalized[:len(raw_state)] = raw_state
+
+            # Enhanced positional encoding for better pattern recognition
+            for i in range(len(raw_state), 256):
+                # More sophisticated encoding for symbolic interpretation
+                normalized[i] = np.sin(i * 0.01) * 0.1 + np.cos(i * 0.005) * 0.05
+
+        # Ensure all values are in reasonable range
+        normalized = np.clip(normalized, -10, 10)
+
+        return normalized
+
+    def leaky_relu(self, x, alpha=0.01):
+        """Leaky ReLU activation function"""
+        return np.where(x > 0, x, alpha * x)
+
+    def forward(self, raw_state: np.ndarray) -> np.ndarray:
+        """Enhanced forward pass with pattern tracking for symbolic interpretation"""
+        # Normalize input to standard size
+        state = self.normalize_input(raw_state)
+
+        # Forward through core layers (transferable features)
+        x = state.copy()
+        self.core_activations = [x]
+
+        for i, layer in enumerate(self.core_layers):
+            z = np.dot(x, layer['weights']) + layer['biases']
+            x = self.leaky_relu(z)
+            self.core_activations.append(x)
+
+            # Track activation patterns for symbolic interpretation
+            if len(self.activation_patterns) < 100:  # Keep recent patterns
+                pattern = {
+                    'layer': i,
+                    'activation_mean': np.mean(x),
+                    'activation_std': np.std(x),
+                    'activation_sparsity': np.sum(x == 0) / len(x),
+                    'timestamp': time.time()
+                }
+                self.activation_patterns.append(pattern)
+
+        # Store enhanced core features for transfer learning
+        self.core_features = x.copy()
+
+        # Forward through adapter layer (environment-specific)
+        adapter_z = np.dot(x, self.adapter_layer['weights']) + self.adapter_layer['biases']
+        adapter_out = self.leaky_relu(adapter_z)
+        self.adapter_features = adapter_out.copy()
+
+        # Forward through output layer
+        output_z = np.dot(adapter_out, self.output_layer['weights']) + self.output_layer['biases']
+        q_values = output_z  # Linear output for Q-learning
+
+        return q_values
+
+    def record_decision_pattern(self, state: np.ndarray, action: int, reward: float):
+        """Record decision patterns for symbolic interpretation"""
+        decision_pattern = {
+            'state_summary': np.array([np.mean(state), np.std(state), np.min(state), np.max(state)]),
+            'action': action,
+            'reward': reward,
+            'core_features_summary': np.array([np.mean(self.core_features), np.std(self.core_features)]) if hasattr(
+                self, 'core_features') else np.zeros(2),
+            'timestamp': time.time()
+        }
+
+        self.decision_patterns.append(decision_pattern)
+
+        # Keep manageable history
+        if len(self.decision_patterns) > 200:
+            self.decision_patterns = self.decision_patterns[-100:]
+
+        # Update reward correlations
+        if action not in self.reward_correlations:
+            self.reward_correlations[action] = []
+        self.reward_correlations[action].append(reward)
+
+        # Keep recent correlations
+        if len(self.reward_correlations[action]) > 50:
+            self.reward_correlations[action] = self.reward_correlations[action][-25:]
+
+    def get_enhanced_core_features(self) -> Dict[str, Any]:
+        """Get enhanced transferable core features with pattern analysis"""
+        core_features = getattr(self, 'core_features', np.zeros(self.core_sizes[-1]))
+
+        return {
+            'core_features': core_features,
+            'feature_summary': {
+                'mean': np.mean(core_features),
+                'std': np.std(core_features),
+                'sparsity': np.sum(core_features == 0) / len(core_features),
+                'max_activation': np.max(core_features),
+                'min_activation': np.min(core_features)
+            },
+            'recent_patterns': self.activation_patterns[-10:] if self.activation_patterns else [],
+            'decision_patterns': self.decision_patterns[-10:] if self.decision_patterns else [],
+            'reward_correlations': {k: np.mean(v) for k, v in self.reward_correlations.items()},
+            'pattern_stability': self._calculate_pattern_stability()
+        }
+
+    def _calculate_pattern_stability(self) -> float:
+        """Calculate stability of neural patterns for transfer learning"""
+        if len(self.activation_patterns) < 10:
+            return 0.0
+
+        recent_patterns = self.activation_patterns[-10:]
+        means = [p['activation_mean'] for p in recent_patterns]
+        stds = [p['activation_std'] for p in recent_patterns]
+
+        mean_stability = 1.0 - (np.std(means) / (np.mean(np.abs(means)) + 1e-8))
+        std_stability = 1.0 - (np.std(stds) / (np.mean(stds) + 1e-8))
+
+        return max(0, min(1, (mean_stability + std_stability) / 2))
+
+    def transfer_core_layers_from(self, source_network: 'StandardizedNetwork'):
+        """Transfer core layers from another network"""
+        try:
+            # Verify architecture compatibility
+            if self.core_sizes != source_network.core_sizes:
+                print(f"❌ Incompatible core architectures")
+                return False
+
+            # Copy core layer weights
+            for i, source_layer in enumerate(source_network.core_layers):
+                self.core_layers[i]['weights'] = source_layer['weights'].copy()
+                self.core_layers[i]['biases'] = source_layer['biases'].copy()
+
+            # Update metadata
+            source_domains = source_network.metadata.get('training_domains', [])
+            self.metadata['training_domains'].extend(source_domains)
+            self.metadata['training_domains'] = list(set(self.metadata['training_domains']))
+            self.metadata['transfer_source'] = source_network.environment_id
+
+            print(f"🔄 Core layers transferred from {source_network.environment_id}")
+            print(f"   Combined training domains: {self.metadata['training_domains']}")
+            return True
+
+        except Exception as e:
+            print(f"❌ Error transferring core layers: {e}")
+            return False
+
+    def save_network(self, filepath: str):
+        """Save enhanced network with pattern data"""
+        try:
+            # Prepare enhanced data for saving
+            save_data = {
+                'metadata': self.metadata,
+                'architecture': {
+                    'input_size': self.input_size,
+                    'core_sizes': self.core_sizes,
+                    'adapter_size': self.adapter_size,
+                    'action_size': self.action_size
+                },
+                'pattern_data': {
+                    'activation_patterns': self.activation_patterns[-50:],  # Recent patterns
+                    'decision_patterns': self.decision_patterns[-50:],
+                    'reward_correlations': self.reward_correlations
+                }
+            }
+
+            # Save core layers
+            for i, layer in enumerate(self.core_layers):
+                save_data[f'core_layer_{i}_weights'] = layer['weights']
+                save_data[f'core_layer_{i}_biases'] = layer['biases']
+
+            # Save adapter and output layers
+            save_data['adapter_weights'] = self.adapter_layer['weights']
+            save_data['adapter_biases'] = self.adapter_layer['biases']
+            save_data['output_weights'] = self.output_layer['weights']
+            save_data['output_biases'] = self.output_layer['biases']
+
+            # Save to file
+            np.savez_compressed(filepath, **save_data)
+
+            print(f"💾 Enhanced network saved: {filepath}")
+            print(f"   Pattern data: {len(self.activation_patterns)} activation patterns")
+            return True
+
+        except Exception as e:
+            print(f"❌ Error saving enhanced network: {e}")
+            return False
+
+    def load_network(self, filepath: str) -> bool:
+        """Load enhanced network with pattern data"""
+        try:
+            if not os.path.exists(filepath):
+                print(f"⚠️ Enhanced network file not found: {filepath}")
+                return False
+
+            # Load data
+            data = np.load(filepath, allow_pickle=True)
+
+            # Load core layers
+            for i in range(len(self.core_layers)):
+                self.core_layers[i]['weights'] = data[f'core_layer_{i}_weights']
+                self.core_layers[i]['biases'] = data[f'core_layer_{i}_biases']
+
+            # Load adapter and output layers
+            self.adapter_layer['weights'] = data['adapter_weights']
+            self.adapter_layer['biases'] = data['adapter_biases']
+            self.output_layer['weights'] = data['output_weights']
+            self.output_layer['biases'] = data['output_biases']
+
+            # Load enhanced pattern data
+            if 'pattern_data' in data:
+                pattern_data = data['pattern_data'].item()
+                self.activation_patterns = pattern_data.get('activation_patterns', [])
+                self.decision_patterns = pattern_data.get('decision_patterns', [])
+                self.reward_correlations = pattern_data.get('reward_correlations', {})
+
+            # Update metadata
+            if 'metadata' in data:
+                self.metadata.update(data['metadata'].item())
+
+            print(f"📥 Enhanced network loaded: {filepath}")
+            print(f"   Pattern data: {len(self.activation_patterns)} activation patterns")
+            return True
+
+        except Exception as e:
+            print(f"❌ Error loading enhanced network: {e}")
+            return False
+
+
+class EnhancedMatchLogger:
+    """Enhanced Match logging system with neural-symbolic integration tracking"""
+
+    def __init__(self, agent_id: str, environment_id: str):
+        self.agent_id = agent_id
+        self.environment_id = environment_id
+        self.log_dir = f"saas_agents/{agent_id}/environments/{environment_id}"
+        self.log_file = os.path.join(self.log_dir, 'matches.json')
         self.current_match = None
-        self.all_matches = []
+        self.matches = []
+
+        # Ensure directory structure exists
+        os.makedirs(self.log_dir, exist_ok=True)
+
         self.load_match_history()
 
+    def start_match(self, match_id: str):
+        """Start logging an enhanced match with neural-symbolic tracking"""
+        self.current_match = {
+            'match_id': match_id,
+            'environment_id': self.environment_id,
+            'agent_id': self.agent_id,
+            'start_time': datetime.datetime.now().isoformat(),
+            'end_time': None,
+            'winner': None,
+            'final_score': {},
+
+            # Enhanced neural-symbolic tracking
+            'neural_patterns_tracked': 0,
+            'symbolic_decisions_made': 0,
+            'neural_symbolic_coherence': 0.0,
+            'transferable_skills_used': [],
+            'environment_specific_tactics': [],
+            'learning_insights': [],
+            'neural_pattern_evolution': [],
+            'knowledge_transfer_events': [],
+            'decision_correlation_analysis': []
+        }
+        print(f"🆕 Started enhanced match logging: {match_id}")
+
+    def log_neural_symbolic_decision(self, decision_info: Dict[str, Any]):
+        """Log neural-symbolic decision event"""
+        if self.current_match:
+            decision_event = {
+                'timestamp': time.time(),
+                'decision_type': decision_info.get('decision_type'),
+                'neural_action': decision_info.get('neural_action'),
+                'symbolic_action': decision_info.get('symbolic_action'),
+                'reasoning': decision_info.get('reasoning'),
+                'confidence': decision_info.get('confidence', 0.0)
+            }
+            self.current_match['decision_correlation_analysis'].append(decision_event)
+
+            if decision_info.get('decision_type') == 'symbolic':
+                self.current_match['symbolic_decisions_made'] += 1
+
+    def log_neural_pattern_evolution(self, pattern_info: Dict[str, Any]):
+        """Log neural pattern evolution"""
+        if self.current_match:
+            pattern_event = {
+                'timestamp': time.time(),
+                'pattern_stability': pattern_info.get('pattern_stability', 0.0),
+                'core_features_summary': pattern_info.get('feature_summary', {}),
+                'reward_correlations': pattern_info.get('reward_correlations', {}),
+                'transfer_readiness': pattern_info.get('transfer_readiness', 0.0)
+            }
+            self.current_match['neural_pattern_evolution'].append(pattern_event)
+            self.current_match['neural_patterns_tracked'] += 1
+
+    def end_match(self, winner: str, final_scores: Dict, enhanced_stats: Dict):
+        """End enhanced match logging with neural-symbolic insights"""
+        if not self.current_match:
+            return
+
+        try:
+            self.current_match['end_time'] = datetime.datetime.now().isoformat()
+            self.current_match['winner'] = winner
+            self.current_match['final_score'] = final_scores
+
+            # Add enhanced neural-symbolic insights
+            if enhanced_stats:
+                self.current_match['neural_symbolic_insights'] = {
+                    'pattern_stability': enhanced_stats.get('pattern_stability', 0.0),
+                    'decision_coherence': enhanced_stats.get('decision_coherence', 0.0),
+                    'transfer_effectiveness': enhanced_stats.get('transfer_effectiveness', 0.0),
+                    'learning_acceleration': enhanced_stats.get('learning_acceleration', 0.0)
+                }
+
+            # Calculate enhanced metrics
+            self._calculate_enhanced_match_metrics()
+
+            # Add to matches and save
+            self.matches.append(self.current_match.copy())
+            self.save_match_history()
+
+            print(f"📊 Enhanced match {self.current_match['match_id']} completed")
+            print(f"   Neural patterns: {self.current_match['neural_patterns_tracked']}")
+            print(f"   Symbolic decisions: {self.current_match['symbolic_decisions_made']}")
+
+            self.current_match = None
+
+        except Exception as e:
+            print(f"❌ Error ending enhanced match: {e}")
+            self.current_match = None
+
+    def _calculate_enhanced_match_metrics(self):
+        """Calculate enhanced match metrics"""
+        try:
+            # Calculate neural-symbolic coherence
+            decisions = self.current_match.get('decision_correlation_analysis', [])
+            if decisions:
+                coherence_scores = []
+                for decision in decisions:
+                    if decision.get('neural_action') == decision.get('symbolic_action'):
+                        coherence_scores.append(1.0)
+                    else:
+                        coherence_scores.append(0.0)
+
+                self.current_match['neural_symbolic_coherence'] = np.mean(coherence_scores) if coherence_scores else 0.0
+
+            # Calculate pattern evolution trajectory
+            patterns = self.current_match.get('neural_pattern_evolution', [])
+            if len(patterns) >= 2:
+                early_stability = np.mean([p.get('pattern_stability', 0) for p in patterns[:len(patterns) // 2]])
+                late_stability = np.mean([p.get('pattern_stability', 0) for p in patterns[len(patterns) // 2:]])
+                self.current_match['pattern_improvement'] = late_stability - early_stability
+
+        except Exception as e:
+            print(f"❌ Error calculating enhanced metrics: {e}")
+
     def load_match_history(self):
+        """Load enhanced match history"""
         try:
             if os.path.exists(self.log_file):
                 with open(self.log_file, 'r') as f:
                     data = json.load(f)
-                    self.all_matches = data.get('matches', [])
-                print(f"📚 Loaded {len(self.all_matches)} match records from {self.log_file}")
+                    self.matches = data.get('matches', [])
+                    # Keep only recent matches (last 20)
+                    if len(self.matches) > 20:
+                        self.matches = self.matches[-20:]
+                print(f"📚 Loaded {len(self.matches)} enhanced match records")
         except Exception as e:
-            print(f"⚠️ Could not load match history: {e}")
-            self.all_matches = []
-
-    def start_match(self, match_id, game_type="unknown"):
-        self.current_match = {
-            'match_id': match_id,
-            'game_type': game_type,
-            'start_time': datetime.datetime.now().isoformat(),
-            'end_time': None,
-            'winner': None,
-            'final_score': {'player': 0, 'agent_byte': 0},
-            'agent_byte_stats': {
-                'total_reward': 0,
-                'actions_taken': 0,
-                'match_reward': 0,
-                'exploration_rate_start': 0,
-                'exploration_rate_end': 0,
-                'training_steps': 0,
-                'target_updates': 0,
-                'architecture': 'Agent Byte v1.2 - Modular + Adaptive Learning + Knowledge System Enhanced',
-                'hit_to_score_bonuses': 0,
-                'human_demos_used': 0,
-                'user_demos_recorded': 0,
-                'demo_learning_weight': 0.3,
-                'symbolic_lessons_learned': 0,
-                'strategies_discovered': 0,
-                'symbolic_decisions_made': 0,
-                'neural_decisions_made': 0,
-                'knowledge_effectiveness': 0.0,
-                'gamma_used': 0.99,
-                'gamma_source': 'default',
-                'learning_rate_used': 0.001,
-                'learning_parameters_adapted': False
-            },
-            'interactions': [],
-            'rewards_timeline': [],
-            'user_demonstrations': [],
-            'symbolic_insights': [],
-            'strategic_decisions': [],
-            'learning_adaptations': []
-        }
-        print(f"🆕 Started logging {game_type} match {match_id}")
-
-    def log_learning_adaptation(self, adaptation_info):
-        """Log adaptive learning parameter changes"""
-        if self.current_match:
-            adaptation = {
-                'timestamp': time.time(),
-                'parameter': adaptation_info.get('parameter'),
-                'old_value': adaptation_info.get('old_value'),
-                'new_value': adaptation_info.get('new_value'),
-                'source': adaptation_info.get('source'),
-                'rationale': adaptation_info.get('rationale')
-            }
-            self.current_match['learning_adaptations'].append(adaptation)
-
-    def log_symbolic_insight(self, insight_type, content):
-        """Log symbolic learning insights"""
-        if self.current_match:
-            insight = {
-                'timestamp': time.time(),
-                'type': insight_type,
-                'content': content
-            }
-            self.current_match['symbolic_insights'].append(insight)
-
-    def log_strategic_decision(self, decision_info):
-        """Log strategic decision made by knowledge system"""
-        if self.current_match:
-            decision = {
-                'timestamp': time.time(),
-                'action': decision_info.get('action'),
-                'reasoning': decision_info.get('reasoning'),
-                'confidence': decision_info.get('confidence'),
-                'strategy_used': decision_info.get('strategy_used')
-            }
-            self.current_match['strategic_decisions'].append(decision)
-
-    def log_user_demonstration(self, demo_data):
-        """Log user demonstration data"""
-        if self.current_match:
-            demo = {
-                'timestamp': time.time(),
-                'action': demo_data.get('action'),
-                'outcome': demo_data.get('outcome'),
-                'reward': demo_data.get('reward'),
-                'quality_score': demo_data.get('quality_score'),
-                'learning_weight': demo_data.get('learning_weight')
-            }
-            self.current_match['user_demonstrations'].append(demo)
-
-    def update_match_stats(self, stats):
-        if self.current_match:
-            self.current_match['agent_byte_stats'].update(stats)
-
-    def end_match(self, winner, final_scores, final_stats):
-        if not self.current_match:
-            print("⚠️ No current match to end")
-            return
-        try:
-            self.current_match['end_time'] = datetime.datetime.now().isoformat()
-            self.current_match['winner'] = winner
-            self.current_match['final_score'] = final_scores or {'player': 0, 'agent_byte': 0}
-            if isinstance(final_stats, dict):
-                self.current_match['agent_byte_stats'].update(self._convert_numpy_types(final_stats))
-            start = datetime.datetime.fromisoformat(self.current_match['start_time'])
-            end = datetime.datetime.fromisoformat(self.current_match['end_time'])
-            self.current_match['duration_seconds'] = (end - start).total_seconds()
-            self.all_matches.append(self.current_match.copy())
-            self.save_match_history()
-            print(f"📊 Match {self.current_match['match_id']} completed and logged")
-            self.current_match = None
-        except Exception as e:
-            print(f"❌ Error ending match: {e}")
-            self.current_match = None
+            print(f"⚠️ Could not load enhanced match history: {e}")
+            self.matches = []
 
     def save_match_history(self):
+        """Save enhanced match history"""
         try:
+            # Keep only recent matches
+            if len(self.matches) > 20:
+                self.matches = self.matches[-20:]
+
             data = {
-                'total_matches': len(self.all_matches),
+                'agent_id': self.agent_id,
+                'environment_id': self.environment_id,
+                'total_matches': len(self.matches),
                 'last_updated': datetime.datetime.now().isoformat(),
-                'version': 'Agent Byte v1.2 - Modular + Adaptive Learning + Knowledge System Enhanced',
-                'matches': self._convert_numpy_types(self.all_matches)
+                'architecture_version': 'Agent Byte v2.1 - Neural-Symbolic Integration',
+                'enhanced_features': {
+                    'neural_symbolic_tracking': True,
+                    'pattern_evolution_tracking': True,
+                    'transfer_learning_analytics': True
+                },
+                'matches': self.matches
             }
+
             with open(self.log_file, 'w') as f:
                 json.dump(data, f, indent=2)
+
         except Exception as e:
-            print(f"❌ Could not save match history: {e}")
+            print(f"❌ Could not save enhanced match history: {e}")
 
-    def get_recent_performance(self, last_n_matches=10):
-        if not self.all_matches:
-            return None
-        recent = self.all_matches[-last_n_matches:]
-        total_matches = len(recent)
-        wins = sum(1 for match in recent if match['winner'] == 'Agent Byte')
-        total_reward = sum(match['agent_byte_stats'].get('match_reward', 0) for match in recent)
-        total_hit_bonuses = sum(match['agent_byte_stats'].get('hit_to_score_bonuses', 0) for match in recent)
-        total_human_demos = sum(match['agent_byte_stats'].get('human_demos_used', 0) for match in recent)
-        total_user_demos = sum(match['agent_byte_stats'].get('user_demos_recorded', 0) for match in recent)
-        total_lessons = sum(match['agent_byte_stats'].get('symbolic_lessons_learned', 0) for match in recent)
-        total_symbolic_decisions = sum(match['agent_byte_stats'].get('symbolic_decisions_made', 0) for match in recent)
 
-        gamma_adaptations = sum(
-            1 for match in recent if match['agent_byte_stats'].get('learning_parameters_adapted', False))
+class EnhancedAgentByte:
+    """Enhanced Modular Agent Byte with Neural-Symbolic Dual Brain Integration"""
 
-        return {
-            'matches_analyzed': total_matches,
-            'recent_win_rate': (wins / total_matches * 100) if total_matches > 0 else 0,
-            'recent_hit_rate': sum(match['agent_byte_stats'].get('task_success_rate', 0) for match in
-                                   recent) / total_matches if total_matches > 0 else 0,
-            'avg_reward_per_match': total_reward / total_matches if total_matches > 0 else 0,
-            'avg_hit_bonuses_per_match': total_hit_bonuses / total_matches if total_matches > 0 else 0,
-            'avg_human_demos_per_match': total_human_demos / total_matches if total_matches > 0 else 0,
-            'avg_user_demos_per_match': total_user_demos / total_matches if total_matches > 0 else 0,
-            'avg_lessons_per_match': total_lessons / total_matches if total_matches > 0 else 0,
-            'avg_symbolic_decisions_per_match': total_symbolic_decisions / total_matches if total_matches > 0 else 0,
-            'gamma_adaptations': gamma_adaptations,
-            'adaptive_learning_usage_rate': (gamma_adaptations / total_matches * 100) if total_matches > 0 else 0,
-            'total_matches': len(self.all_matches),
-            'total_wins': sum(1 for match in self.all_matches if match['winner'] == 'Agent Byte')
-        }
+    def __init__(self, agent_id: str, environment_id: str, raw_state_size: int, action_size: int):
+        print("🚀 Agent Byte v2.1 - Enhanced Neural-Symbolic Integration Initializing...")
 
-    def _convert_numpy_types(self, obj):
-        """Convert numpy types to JSON-serializable types"""
-        import numpy as np
-        from typing import Any, Union, Dict, List
-
-        if obj is None:
-            return None
-        elif isinstance(obj, dict):
-            return {key: self._convert_numpy_types(value) for key, value in obj.items()}
-        elif isinstance(obj, list):
-            return [self._convert_numpy_types(item) for item in obj]
-        elif isinstance(obj, (np.integer, np.int64, np.int32, np.int16, np.int8)):
-            return int(obj.item())  # 🔧 FIX: Use .item() to extract scalar
-        elif isinstance(obj, (np.floating, np.float64, np.float32, np.float16)):
-            return float(obj.item())  # 🔧 FIX: Use .item() to extract scalar
-        elif isinstance(obj, np.ndarray):
-            return obj.tolist()
-        elif isinstance(obj, (np.bool_, bool)):
-            return bool(obj.item() if hasattr(obj, 'item') else obj)  # 🔧 FIX: Safe bool conversion
-        elif isinstance(obj, (int, float, str, bool)):
-            return obj  # 🔧 FIX: Pass through regular Python types
-        else:
-            try:
-                # 🔧 FIX: Try to convert unknown numpy types
-                if hasattr(obj, 'item'):
-                    return obj.item()
-                else:
-                    return obj
-            except (ValueError, TypeError):
-                # 🔧 FIX: Fallback for unconvertible types
-                return str(obj)
-
-class DuelingNetwork:
-    """Dueling DQN Network implementation"""
-    
-    def __init__(self, input_size, hidden_sizes, output_size, learning_rate=0.001):
-        self.input_size = input_size
-        self.hidden_sizes = hidden_sizes
-        self.output_size = output_size
-        self.learning_rate = learning_rate
-        self.feature_layers = []
-        layer_sizes = [input_size] + hidden_sizes[:-1]
-        for i in range(len(layer_sizes) - 1):
-            layer = {
-                'weights': np.random.randn(layer_sizes[i], layer_sizes[i+1]) * np.sqrt(2.0 / layer_sizes[i]),
-                'biases': np.zeros(layer_sizes[i+1])
-            }
-            self.feature_layers.append(layer)
-        feature_size = hidden_sizes[-2] if len(hidden_sizes) > 1 else hidden_sizes[0]
-        stream_size = hidden_sizes[-1]
-        self.value_stream = {
-            'weights1': np.random.randn(feature_size, stream_size) * np.sqrt(2.0 / feature_size),
-            'biases1': np.zeros(stream_size),
-            'weights2': np.random.randn(stream_size, 1) * np.sqrt(2.0 / stream_size),
-            'biases2': np.zeros(1)
-        }
-        self.advantage_stream = {
-            'weights1': np.random.randn(feature_size, stream_size) * np.sqrt(2.0 / feature_size),
-            'biases1': np.zeros(stream_size),
-            'weights2': np.random.randn(stream_size, output_size) * np.sqrt(2.0 / stream_size),
-            'biases2': np.zeros(output_size)
-        }
-        print(f"🧠 Dueling Network: {input_size}→{hidden_sizes}→V(1)+A({output_size})")
-    
-    def leaky_relu(self, x, alpha=0.01):
-        return np.where(x > 0, x, alpha * x)
-    
-    def forward(self, state):
-        if len(state.shape) > 1:
-            state = state.flatten()
-        x = state.copy()
-        self.activations = [x]
-        for layer in self.feature_layers:
-            z = np.dot(x, layer['weights']) + layer['biases']
-            x = self.leaky_relu(z)
-            self.activations.append(x)
-        features = x
-        v1 = np.dot(features, self.value_stream['weights1']) + self.value_stream['biases1']
-        v1_activated = self.leaky_relu(v1)
-        value = np.dot(v1_activated, self.value_stream['weights2']) + self.value_stream['biases2']
-        a1 = np.dot(features, self.advantage_stream['weights1']) + self.advantage_stream['biases1']
-        a1_activated = self.leaky_relu(a1)
-        advantages = np.dot(a1_activated, self.advantage_stream['weights2']) + self.advantage_stream['biases2']
-        q_values = value + (advantages - np.mean(advantages))
-        self.features = features
-        self.v1 = v1
-        self.v1_activated = v1_activated
-        self.value = value
-        self.a1 = a1
-        self.a1_activated = a1_activated
-        self.advantages = advantages
-        return q_values
-    
-    def copy_weights_from(self, other_network):
-        for i, layer in enumerate(other_network.feature_layers):
-            self.feature_layers[i]['weights'] = layer['weights'].copy()
-            self.feature_layers[i]['biases'] = layer['biases'].copy()
-        for key in self.value_stream:
-            self.value_stream[key] = other_network.value_stream[key].copy()
-        for key in self.advantage_stream:
-            self.advantage_stream[key] = other_network.advantage_stream[key].copy()
-    
-    def soft_update_from(self, other_network, tau=0.001):
-        for i, layer in enumerate(other_network.feature_layers):
-            self.feature_layers[i]['weights'] = (1 - tau) * self.feature_layers[i]['weights'] + tau * layer['weights']
-            self.feature_layers[i]['biases'] = (1 - tau) * self.feature_layers[i]['biases'] + tau * layer['biases']
-        for key in self.value_stream:
-            self.value_stream[key] = (1 - tau) * self.value_stream[key] + tau * other_network.value_stream[key]
-        for key in self.advantage_stream:
-            self.advantage_stream[key] = (1 - tau) * self.advantage_stream[key] + tau * other_network.advantage_stream[key]
-    
-    def update_weights(self, state, target_q_values, action_taken):
-        current_q_values = self.forward(state)
-        q_error = target_q_values - current_q_values
-        q_error = np.clip(q_error, -1.0, 1.0)
-        action_error = np.zeros_like(current_q_values)
-        action_error[action_taken] = q_error[action_taken]
-        self.advantage_stream['weights2'] += self.learning_rate * np.outer(self.a1_activated, action_error)
-        self.advantage_stream['biases2'] += self.learning_rate * action_error
-        value_error = np.sum(q_error) / len(q_error)
-        self.value_stream['weights2'] += self.learning_rate * np.outer(self.v1_activated, [value_error])
-        self.value_stream['biases2'] += self.learning_rate * value_error
-        return np.mean(q_error ** 2)
-        
-class AgentByte:
-    """Enhanced Modular Agent Byte with Environment Integration + Dual Brain Architecture + Knowledge System"""
-    
-    def __init__(self, state_size=14, action_size=3, logger=None, app_name="unknown_game"):
-        print("🚀 Agent Byte v1.2 - Modular + Adaptive Learning + Knowledge System Enhanced Initializing...")
-        
-        # Initialize dual brain system
-        self.dual_brain = DualBrainAgent()
-        self.app_name = app_name
-        self.app_context = None
-        
-        # NEW: Environment integration for modular behavior
-        self.env = None  # Will be set by the coordinator
-        self.env_context = None
-        self.env_constants = {}
-        
-        # Initialize symbolic decision maker
-        self.symbolic_decision_maker = SymbolicDecisionMaker()
-        
-        # Neural network components
-        self.state_size = state_size
+        # Core identification
+        self.agent_id = agent_id
+        self.environment_id = environment_id
+        self.raw_state_size = raw_state_size
         self.action_size = action_size
-        self.hidden_sizes = [64, 32, 16]
-        self.main_network = DuelingNetwork(self.state_size, self.hidden_sizes, self.action_size, learning_rate=0.001)
-        self.target_network = DuelingNetwork(self.state_size, self.hidden_sizes, self.action_size, learning_rate=0.001)
-        self.target_network.copy_weights_from(self.main_network)
-        
-        # Learning parameters (will be adapted per environment)
-        self.target_update_frequency = 1000
-        self.soft_update_tau = 0.005
-        self.use_soft_updates = True
-        self.learning_rate = self.dual_brain.brain.learning_rate
-        self.exploration_rate = self.dual_brain.brain.epsilon
+
+        # Initialize enhanced file structure
+        self._initialize_enhanced_agent_structure()
+
+        # Initialize enhanced dual brain system with neural-symbolic integration
+        self.dual_brain = EnhancedDualBrainAgent(
+            agent_id=agent_id,
+            environment_id=environment_id,
+            brain_file=self.brain_file,
+            knowledge_file=self.knowledge_file
+        )
+
+        # Initialize enhanced standardized neural network with pattern tracking
+        self.network = StandardizedNetwork(environment_id, action_size)
+        self.target_network = StandardizedNetwork(environment_id, action_size)
+        self.target_network.transfer_core_layers_from(self.network)
+
+        # Load existing networks if available
+        self._load_or_initialize_enhanced_networks()
+
+        # Learning parameters
+        self.learning_rate = 0.001
+        self.exploration_rate = 0.8
         self.exploration_decay = 0.995
         self.min_exploration = 0.1
-        self.gamma = self.dual_brain.brain.gamma  # Default gamma from brain, will be overridden per environment
-        
-        # Adaptive learning tracking
-        self.default_gamma = self.gamma
-        self.environment_gamma = None
-        self.gamma_source = "default"
-        self.learning_parameters_adapted = False
-        self.environment_learning_metadata = {}
-        
-        # Experience and demo buffers
+        self.gamma = 0.99
+        self.target_update_frequency = 1000
+
+        # Enhanced experience and demo buffers
         self.experience_buffer = deque(maxlen=5000)
         self.user_demo_buffer = deque(maxlen=1000)
         self.replay_batch_size = 16
-        self.replay_frequency = 4
-        self.min_buffer_size = 500
-        
-        # Demo learning parameters
-        self.demo_learning_weight = 0.3
-        self.demo_replay_ratio = 0.25
-        
-        # Performance tracking
+
+        # Enhanced performance tracking with neural-symbolic metrics
         self.games_played = 0
         self.wins = 0
         self.total_reward = 0
         self.match_reward = 0
         self.actions_taken = 0
-        self.training_steps = self.dual_brain.brain.training_steps
-        self.total_loss = self.dual_brain.brain.total_loss
-        self.target_updates = self.dual_brain.brain.target_updates
-        self.strategic_moves = 0
-        self.hit_to_score_bonuses = 0
-        self.total_bonus_reward = 0
-        self.human_demos_used = 0
-        self.user_demos_recorded = 0
-        self.user_demos_processed = 0
-        self.double_dqn_improvements = self.dual_brain.brain.double_dqn_improvements
-        
-        # Knowledge system tracking
-        self.symbolic_decisions_made = 0
-        self.neural_decisions_made = 0
-        self.knowledge_effectiveness = 0.0
-        
-        # Symbolic learning tracking
-        self.lessons_learned_this_match = 0
-        self.strategies_discovered_this_match = 0
-        
-        # State tracking
-        self.last_state = None
-        self.last_action = None
-        
-        # Logger
-        self.logger = logger or MatchLogger()
-        
-        print("✅ Agent Byte v1.2 Modular + Adaptive Learning + Knowledge System Enhanced Created!")
-        print(f"   🧠 Core Brain: {self.training_steps} training steps")
-        print(f"   🧩 Knowledge: Symbolic learning + intelligent application")
-        print(f"   🎯 Architecture: Neural + Symbolic Decision Making")
-        print(f"   👤 Demo Learning: Enhanced with symbolic understanding")
-        print(f"   ⚙️ Adaptive Learning: Environment-specific parameter optimization")
-        print(f"   🔧 Default Gamma: {self.gamma} (will adapt per environment)")
-        print(f"   🏗️ Modular Design: Ready for environment-specific integration")
+        self.training_steps = 0
+
+        # Enhanced transfer learning tracking with neural-symbolic integration
+        self.transferable_skills_used = []
+        self.knowledge_transfer_events = []
+        self.cross_environment_insights = []
+        self.neural_symbolic_decisions = []
+        self.pattern_evolution_history = []
+
+        # Environment integration
+        self.env = None
+        self.env_context = None
+        self.app_context = None
+
+        # Enhanced logger with neural-symbolic tracking
+        self.logger = EnhancedMatchLogger(agent_id, environment_id)
+
+        print("✅ Enhanced Agent Byte v2.1 Created with Neural-Symbolic Integration!")
+        print(f"   🆔 Agent ID: {agent_id}")
+        print(f"   🌍 Environment: {environment_id}")
+        print(f"   🧠 Enhanced Standardized Network: 256→512→256→128→64→{action_size}")
+        print(f"   🧠🧩 Enhanced Dual Brain: Neural-Symbolic Integration Active")
+        print(f"   🔄 Transfer Learning: Cross-environment ready")
+        print(f"   📁 Enhanced Storage: {self.agent_dir}")
+
+    def _initialize_enhanced_agent_structure(self):
+        """Initialize enhanced multi-environment file structure"""
+        # Create enhanced agent directory structure
+        self.agent_dir = f"saas_agents/{self.agent_id}"
+        self.core_dir = os.path.join(self.agent_dir, "core")
+        self.env_dir = os.path.join(self.agent_dir, "environments", self.environment_id)
+        self.transfer_dir = os.path.join(self.agent_dir, "transfers")
+        self.neural_symbolic_dir = os.path.join(self.agent_dir, "neural_symbolic")  # NEW
+
+        # Create directories
+        for directory in [self.core_dir, self.env_dir, self.transfer_dir, self.neural_symbolic_dir]:
+            os.makedirs(directory, exist_ok=True)
+
+        # Define enhanced file paths
+        self.profile_file = os.path.join(self.core_dir, "agent_profile.json")
+        self.general_knowledge_file = os.path.join(self.core_dir, "general_knowledge.json")
+        self.meta_learning_file = os.path.join(self.core_dir, "meta_learning.json")
+
+        # Neural-symbolic integration files
+        self.neural_patterns_file = os.path.join(self.neural_symbolic_dir, "neural_patterns.json")
+        self.decision_correlations_file = os.path.join(self.neural_symbolic_dir, "decision_correlations.json")
+
+        self.network_file = os.path.join(self.env_dir, "network.npz")
+        self.brain_file = os.path.join(self.env_dir, "brain.json")
+        self.knowledge_file = os.path.join(self.env_dir, "knowledge.json")
+
+        # Initialize enhanced agent profile
+        self._initialize_enhanced_agent_profile()
+
+        print(f"📁 Enhanced agent structure initialized: {self.agent_dir}")
+
+    def _initialize_enhanced_agent_profile(self):
+        """Initialize or load enhanced agent profile with neural-symbolic tracking"""
+        if os.path.exists(self.profile_file):
+            with open(self.profile_file, 'r') as f:
+                self.profile = json.load(f)
+            print(f"📋 Loaded enhanced agent profile: {len(self.profile.get('environments', []))} environments")
+        else:
+            # Create new enhanced agent profile
+            self.profile = {
+                'agent_id': self.agent_id,
+                'created_at': datetime.datetime.now().isoformat(),
+                'architecture_version': 'Agent Byte v2.1 - Neural-Symbolic Integration',
+                'environments': [self.environment_id],
+                'enhanced_capabilities': {
+                    'transferable_skills': [],
+                    'specialized_tactics': {},
+                    'learning_efficiency': 0.0,
+                    'adaptation_speed': 0.0,
+                    'neural_symbolic_coherence': 0.0,  # NEW
+                    'pattern_recognition_ability': 0.0,  # NEW
+                    'cross_environment_transfer_rate': 0.0  # NEW
+                },
+                'neural_symbolic_integration': {
+                    'enabled': True,
+                    'decision_correlation_rate': 0.0,
+                    'pattern_stability_score': 0.0,
+                    'transfer_effectiveness': 0.0
+                },
+                'transfer_history': [],
+                'performance_benchmarks': {}
+            }
+            self._save_enhanced_agent_profile()
+            print(f"🆕 Created new enhanced agent profile with neural-symbolic integration")
+
+    def _save_enhanced_agent_profile(self):
+        """Save enhanced agent profile"""
+        try:
+            with open(self.profile_file, 'w') as f:
+                json.dump(self.profile, f, indent=2)
+        except Exception as e:
+            print(f"❌ Error saving enhanced agent profile: {e}")
+
+    def _load_or_initialize_enhanced_networks(self):
+        """Load existing enhanced networks or initialize new ones"""
+        if os.path.exists(self.network_file):
+            if self.network.load_network(self.network_file):
+                self.target_network.load_network(self.network_file)
+                print(f"📥 Loaded existing enhanced networks for {self.environment_id}")
+            else:
+                print(f"⚠️ Failed to load enhanced networks, using new initialization")
+        else:
+            print(f"🆕 No existing enhanced networks found, using new initialization")
 
     def set_environment(self, env):
         """Set the environment instance for modular behavior"""
@@ -418,946 +673,779 @@ class AgentByte:
         if hasattr(env, 'get_env_context'):
             self.env_context = env.get_env_context()
             print(f"🌟 Environment context loaded: {self.env_context.get('name', 'unknown')}")
-        
-        if hasattr(env, 'get_environment_specific_constants'):
-            self.env_constants = env.get_environment_specific_constants()
-            print(f"⚙️ Environment constants loaded: {len(self.env_constants)} parameters")
 
-    def start_new_match(self, game_type="game", env_context=None):
-        """Start new match with adaptive learning parameter loading"""
+    def start_new_match(self, match_id: str, env_context: Optional[Dict] = None):
+        """
+        🚀 Enhanced match start with permanent environment knowledge integration
+        
+        This now ensures agents permanently learn and remember what each environment is about
+        """
         # Reset match-specific stats
         self.match_reward = 0
         self.actions_taken = 0
-        self.hit_to_score_bonuses = 0
-        self.human_demos_used = 0
-        self.user_demos_recorded = 0
-        self.user_demos_processed = 0
-        self.lessons_learned_this_match = 0
-        self.strategies_discovered_this_match = 0
-        self.symbolic_decisions_made = 0
-        self.neural_decisions_made = 0
+        self.transferable_skills_used = []
+        self.knowledge_transfer_events = []
+        self.neural_symbolic_decisions = []
+        self.pattern_evolution_history = []
 
-        # Reset decision maker history for this match
-        self.symbolic_decision_maker.decision_history = []
+        # 🧠 STEP 1: Load existing environment understanding
+        print(f"🧠 Loading environment understanding for {self.environment_id}...")
+        existing_understanding = self.dual_brain.knowledge.load_environment_understanding(self.environment_id)
+        
+        # 🚀 STEP 2: Integrate new environment context permanently (if provided)
+        if env_context:
+            print(f"🌍 Integrating environment context for {self.environment_id}...")
+            integration_success = self.dual_brain.knowledge.integrate_environment_profile(
+                self.environment_id, env_context
+            )
+            
+            if integration_success:
+                # Reload understanding after integration
+                existing_understanding = self.dual_brain.knowledge.load_environment_understanding(self.environment_id)
+            else:
+                print(f"⚠️ Failed to integrate environment context")
+        
+        # 🎯 STEP 3: Agent reasoning about environment knowledge
+        self._analyze_environment_understanding(existing_understanding, bool(env_context))
+        
+        # 🎮 STEP 4: Start enhanced dual brain session with full context
+        self.app_context = self.dual_brain.start_enhanced_session(
+            self.environment_id,
+            env_context=env_context,
+            existing_knowledge=existing_understanding  # Pass persistent knowledge
+        )
 
-        # Load symbolic context for this game with environmental context
-        self.app_context = self.dual_brain.start_session(game_type, env_context=env_context)
+        # 📊 STEP 5: Initialize neural pattern tracking for this match
+        self._initialize_match_pattern_tracking()
 
-        # Adapt learning parameters based on environment context
-        self._adapt_learning_parameters(env_context)
+        # 🚀 STEP 6: Start enhanced logging
+        self.logger.start_match(match_id)
 
-        # Start logging
-        match_id = f"agent_byte_{game_type}_{int(time.time())}"
-        self.logger.start_match(match_id, game_type)
-
-        #  Use 'agent_stats' instead of 'agent_byte_stats'
-        if self.logger.current_match:
-            self.logger.current_match['agent_byte_stats']['exploration_rate_start'] = self.exploration_rate
-            self.logger.current_match['agent_byte_stats']['gamma_used'] = self.gamma
-            self.logger.current_match['agent_byte_stats']['gamma_source'] = self.gamma_source
-            self.logger.current_match['agent_byte_stats'][
-                'learning_parameters_adapted'] = self.learning_parameters_adapted
-
-            # Log environmental context integration
-            if env_context:
-                self.logger.log_symbolic_insight("env_context_loaded",
-                                                 f"Environment context integrated for {game_type}")
-
-                # Log learning parameter adaptations
-                if self.learning_parameters_adapted:
-                    self.logger.log_learning_adaptation({
-                        'parameter': 'gamma',
-                        'old_value': self.default_gamma,
-                        'new_value': self.gamma,
-                        'source': f'environment:{game_type}',
-                        'rationale': self.environment_learning_metadata.get('gamma_rationale',
-                                                                            'Environment-specific optimization')
-                    })
-
-        print(f"🆕 New {game_type} match started with modular adaptive learning + knowledge system enabled")
+        print(f"🆕 Enhanced {self.environment_id} match started with full environment knowledge")
         if self.app_context:
             strategies = len(self.app_context.get('strategies', []))
             lessons = len(self.app_context.get('lessons', []))
-            print(f"   📚 Available knowledge: {strategies} strategies, {lessons} lessons")
-            print(f"   🧩 Knowledge system: Active and ready for intelligent decision making")
-            print(f"   ⚙️ Learning parameters: Gamma={self.gamma:.3f} ({self.gamma_source})")
-            print(f"   🏗️ Modular integration: Environment-specific behavior enabled")
-    def _adapt_learning_parameters(self, env_context):
-        """Adapt learning parameters based on environment context"""
-        if not env_context:
-            self.gamma_source = "default"
-            self.learning_parameters_adapted = False
+            transferable = len(self.app_context.get('transferable_skills', []))
+            print(f"   📚 Available knowledge: {strategies} strategies, {lessons} lessons, {transferable} transferable skills")
+            
+            # Show environment understanding
+            understanding_summary = self.dual_brain.knowledge.get_environment_knowledge_summary(self.environment_id)
+            print(f"   🧠 Environment knowledge: {understanding_summary}")
+
+    def _analyze_environment_understanding(self, understanding: Dict[str, Any], new_context_provided: bool):
+        """
+        🧠 Agent reasoning about its environment understanding
+        
+        This provides insight into what the agent knows/learns about each environment
+        """
+        if not understanding:
+            print(f"🆕 First time encountering {self.environment_id} - starting fresh")
             return
         
-        # Extract learning parameters from environment context
-        learning_params = env_context.get('learning_parameters', {})
+        level = understanding.get('understanding_level', 'basic')
+        sessions = understanding.get('total_experience', 0)
+        knows_objectives = understanding.get('knows_objectives', False)
+        knows_rules = understanding.get('knows_rules', False)
+        has_framework = understanding.get('has_strategic_framework', False)
         
-        if learning_params:
-            print("🔧 Adapting learning parameters for environment...")
-            
-            # Adapt gamma
-            recommended_gamma = learning_params.get('recommended_gamma')
-            if recommended_gamma and recommended_gamma != self.gamma:
-                old_gamma = self.gamma
-                self.environment_gamma = recommended_gamma
-                self.gamma = recommended_gamma
-                self.gamma_source = f"environment:{env_context.get('name', 'unknown')}"
-                self.learning_parameters_adapted = True
+        # Agent reasoning messages based on understanding level
+        if level == 'expert':
+            print(f"🏆 Expert level understanding of {understanding.get('display_name', self.environment_id)}")
+            print(f"    📊 {sessions} sessions of experience")
+            if knows_objectives:
+                objective = understanding.get('objectives', {}).get('primary', '')
+                print(f"    🎯 I know my objective: {objective}")
+            if has_framework:
+                skills = understanding.get('strategic_framework', {}).get('core_skills_required', [])
+                skill_names = [str(skill) for skill in skills[:3]]
+                print(f"    🧠 I've mastered core skills: {', '.join(skill_names)}")
                 
-                gamma_rationale = learning_params.get('gamma_rationale', 'Environment-specific optimization')
-                self.environment_learning_metadata['gamma_rationale'] = gamma_rationale
+        elif level == 'experienced':
+            print(f"🧠 Experienced with {understanding.get('display_name', self.environment_id)}")
+            print(f"    📊 {sessions} sessions of learning")
+            if knows_objectives:
+                objective = understanding.get('objectives', {}).get('primary', '')
+                print(f"    🎯 I understand the objective: {objective}")
+            if knows_rules:
+                rules = understanding.get('rules', {}).get('core_mechanics', [])
+                print(f"    📋 I know the rules: {len(rules)} core mechanics")
                 
-                print(f"   🎯 Gamma adapted: {old_gamma:.3f} → {self.gamma:.3f}")
-                print(f"   📝 Rationale: {gamma_rationale}")
-            
-            # Store temporal characteristics for potential future optimizations
-            temporal_chars = learning_params.get('temporal_characteristics', {})
-            if temporal_chars:
-                self.environment_learning_metadata.update(temporal_chars)
-                print(f"   ⏱️ Temporal characteristics understood:")
-                print(f"      Match duration: {temporal_chars.get('match_duration', 'unknown')}")
-                print(f"      Feedback immediacy: {temporal_chars.get('feedback_immediacy', 'unknown')}")
-                print(f"      Decision frequency: {temporal_chars.get('decision_frequency', 'unknown')}")
+        elif level == 'intermediate':
+            print(f"🎓 Developing understanding of {understanding.get('display_name', self.environment_id)}")
+            print(f"    📊 {sessions} sessions so far")
+            if knows_objectives:
+                print(f"    🎯 I'm learning the objectives")
+            if knows_rules:
+                print(f"    📋 I'm learning the rules")
+                
+        else:  # basic
+            print(f"🆕 Basic understanding of {understanding.get('display_name', self.environment_id)}")
+            print(f"    📊 {sessions} sessions of experience")
+            if new_context_provided:
+                print(f"    🌍 Integrating new environment context...")
         
-        else:
-            # No learning parameters provided, use defaults
-            self.gamma_source = "default"
-            self.learning_parameters_adapted = False
-            print("   ⚙️ Using default learning parameters (no environment-specific recommendations)")
+        # Show transferable skills if available
+        transferable_skills = understanding.get('transferable_skills', [])
+        if transferable_skills:
+            skill_names = [str(skill) for skill in transferable_skills[:3]]
+            print(f"    🔄 Transferable skills available: {', '.join(skill_names)}")
 
-    def get_action(self, state):
-        """ENHANCED action selection with intelligent symbolic knowledge application"""
+    def _initialize_match_pattern_tracking(self):
+        """Initialize pattern tracking for the current match"""
+        # Reset pattern tracking arrays for new match
+        self.neural_symbolic_decisions = []
+        self.pattern_evolution_history = []
+
+        print("📊 Pattern tracking initialized for match")
+
+    def get_enhanced_environment_awareness(self) -> Dict[str, Any]:
+        """
+        🧠 Get comprehensive report of agent's environment awareness
+        
+        This shows what the agent has learned about its current environment
+        """
+        if not hasattr(self, 'dual_brain'):
+            return {}
+        
+        understanding = self.dual_brain.knowledge.load_environment_understanding(self.environment_id)
+        
+        awareness = {
+            'current_environment': self.environment_id,
+            'display_name': understanding.get('display_name', self.environment_id),
+            'understanding_level': understanding.get('understanding_level', 'basic'),
+            'total_experience': understanding.get('total_experience', 0),
+            'environment_type': understanding.get('environment_type', 'unknown'),
+            
+            # Knowledge categories
+            'objectives_known': understanding.get('knows_objectives', False),
+            'rules_known': understanding.get('knows_rules', False),
+            'strategic_framework_available': understanding.get('has_strategic_framework', False),
+            
+            # Detailed knowledge
+            'primary_objective': understanding.get('objectives', {}).get('primary', ''),
+            'core_rules_count': len(understanding.get('rules', {}).get('core_mechanics', [])),
+            'core_skills_count': len(understanding.get('strategic_framework', {}).get('core_skills_required', [])),
+            'transferable_skills_count': len(understanding.get('transferable_skills', [])),
+            
+            # Agent learning
+            'strategies_learned': len(understanding.get('strategies', [])),
+            'lessons_learned': len(understanding.get('lessons', [])),
+            'neural_insights_gained': len(understanding.get('neural_insights', [])),
+            
+            # Experience timeline
+            'first_encountered': understanding.get('first_encountered'),
+            'last_updated': understanding.get('last_updated')
+        }
+        
+        return awareness
+
+    def get_action(self, raw_state: np.ndarray) -> int:
+        """Enhanced action selection with neural-symbolic integration"""
         try:
-            if isinstance(state, (list, tuple)):
-                state = np.array(state)
-            elif len(state.shape) > 1:
-                state = state.flatten()
-                
-            # Get neural network Q-values
-            q_values = self.main_network.forward(state)
-            
-            # ENHANCED: Use intelligent symbolic decision making
-            if self.app_context:
-                action, reasoning = self.symbolic_decision_maker.make_informed_decision(
-                    state, q_values, self.app_context, self.exploration_rate
-                )
-                
-                # Track decision type
-                if "🧩" in reasoning:  # Symbolic decision was made
-                    self.symbolic_decisions_made += 1
-                    print(f"🎯 {reasoning}")
-                    if self.logger and self.logger.current_match:
-                        self.logger.log_symbolic_insight("strategic_decision", reasoning)
-                        self.logger.log_strategic_decision({
-                            'action': action,
-                            'reasoning': reasoning,
-                            'confidence': 0.8,
-                            'strategy_used': reasoning.split("'")[1] if "'" in reasoning else "unknown"
-                        })
-                else:
-                    self.neural_decisions_made += 1
-                
+            # Get standardized network output
+            q_values = self.network.forward(raw_state)
+
+            # Epsilon-greedy action selection
+            if random.random() < self.exploration_rate:
+                # Explore: choose random action
+                action = random.randint(0, self.action_size - 1)
             else:
-                # Fallback to neural network decision
-                if random.random() < self.exploration_rate:
-                    action = random.randint(0, self.action_size - 1)
-                else:
-                    action = np.argmax(q_values)
-                reasoning = "🧠 Neural network decision (no context)"
-                self.neural_decisions_made += 1
-            
-            self.last_state = state.copy()
-            self.last_action = action
+                # Exploit: choose best action
+                action = int(np.argmax(q_values))
+            self.network.record_decision_pattern(raw_state, action, 0.0)  # Reward updated later
+
+            # Get enhanced core features for transfer learning analysis
+            enhanced_features = self.network.get_enhanced_core_features()
+
+            # Apply enhanced symbolic decision making if context available
+            if self.app_context and hasattr(self.dual_brain, 'symbolic_decision_maker'):
+                try:
+                    # Create action history and reward history for symbolic analysis
+                    action_history = [{'action': action, 'timestamp': time.time()}]
+                    reward_history = [0.0]  # Placeholder
+
+                    enhanced_action, reasoning, decision_info = self.dual_brain.symbolic_decision_maker.make_enhanced_decision(
+                        raw_state, q_values, action_history, reward_history, self.exploration_rate
+                    )
+
+                    # Record neural-symbolic decision
+                    decision_record = {
+                        'timestamp': time.time(),
+                        'neural_action': action,
+                        'symbolic_action': enhanced_action,
+                        'decision_info': decision_info,
+                        'reasoning': reasoning,
+                        'enhanced_features': enhanced_features
+                    }
+                    self.neural_symbolic_decisions.append(decision_record)
+
+                    # Log the decision
+                    if self.logger:
+                        self.logger.log_neural_symbolic_decision(decision_info)
+
+                    action = enhanced_action
+
+                except Exception as e:
+                    print(f"⚠️ Symbolic decision error: {e}")
+                    # Fall back to neural action
+                    pass
+
             self.actions_taken += 1
-            
             return action
-            
+
         except Exception as e:
-            print(f"⚠️ Agent action error: {e}")
+            print(f"⚠️ Enhanced action error: {e}")
             return random.randint(0, self.action_size - 1)
 
-    def learn(self, reward, next_state, done=False):
-        """Enhanced learning with modular environment integration and adaptive gamma"""
-        if self.last_state is None or self.last_action is None:
+    def learn(self, reward: float, next_raw_state: np.ndarray, done: bool = False):
+        """Enhanced learning with neural-symbolic pattern tracking"""
+        if self.actions_taken == 0:
             return
-            
+
         try:
-            if isinstance(next_state, (list, tuple)):
-                next_state = np.array(next_state)
-            elif len(next_state.shape) > 1:
-                next_state = next_state.flatten()
-            
-            # Update strategy effectiveness tracking
-            self.symbolic_decision_maker.update_strategy_effectiveness(reward)
-            
-            # NEW: Use environment-specific interpretation for learning
-            if self.env:
-                # Check if environment should generate lessons or strategies
-                if hasattr(self.env, 'should_generate_lesson') and self.env.should_generate_lesson(reward):
-                    if hasattr(self.env, 'generate_lesson_from_reward'):
-                        lesson = self.env.generate_lesson_from_reward(reward)
-                        if self.dual_brain.knowledge.add_lesson(self.app_name, lesson):
-                            self.lessons_learned_this_match += 1
-                            print(f"📚 Environment lesson: {lesson}")
-                
-                if hasattr(self.env, 'should_generate_strategy') and self.env.should_generate_strategy(reward):
-                    if hasattr(self.env, 'generate_strategy_from_performance'):
-                        strategy = self.env.generate_strategy_from_performance(
-                            self.wins, self.games_played, self.total_reward / max(1, self.games_played)
-                        )
-                        if self.dual_brain.knowledge.add_strategy(self.app_name, strategy):
-                            self.strategies_discovered_this_match += 1
-                            print(f"🎯 Environment strategy: {strategy}")
-                
-                # Track environment-specific bonuses using environment constants
-                if self.env_constants:
-                    hit_bonus_threshold = self.env_constants.get('hit_to_score_bonus_threshold', 3.5)
-                    if reward > hit_bonus_threshold:
-                        self.hit_to_score_bonuses += 1
-                        bonus_amount = reward - self.env_constants.get('task_completion_bonus', 3.0)
-                        self.total_bonus_reward += max(0, bonus_amount)
-                        
-                        # Use environment-specific interpretation
-                        if hasattr(self.env, 'interpret_reward'):
-                            interpretation = self.env.interpret_reward(reward)
-                            print(f"🎳 {interpretation}! Total bonuses: {self.hit_to_score_bonuses}")
-                        else:
-                            print(f"🎳 Bonus achieved! Total: {self.hit_to_score_bonuses}")
-            
-            else:
-                # Fallback behavior when no environment is set
-                # Use generic thresholds and messages
-                if reward > 3.5:
-                    self.hit_to_score_bonuses += 1
-                    self.total_bonus_reward += max(0, reward - 3.0)
-                    lesson = f"High reward combination ({reward:.1f}) - successful strategy worth repeating"
-                    if self.dual_brain.knowledge.add_lesson(self.app_name, lesson):
-                        self.lessons_learned_this_match += 1
-                        print(f"📚 Generic lesson: {lesson}")
-                
-                if reward > 5.0:
-                    strategy = f"High performance strategy: Achieved {reward:.1f} reward through consistent execution"
-                    if self.dual_brain.knowledge.add_strategy(self.app_name, strategy):
-                        self.strategies_discovered_this_match += 1
-                        print(f"🎯 Generic strategy: {strategy}")
-            
-            # Store experience
-            experience = {
-                'state': self.last_state.copy(),
-                'action': self.last_action,
-                'reward': reward,
-                'next_state': next_state.copy(),
-                'done': done,
-                'source': 'agent',
-                'learning_weight': 1.0
+            # Update reward in the last decision pattern
+            if self.network.decision_patterns:
+                self.network.decision_patterns[-1]['reward'] = reward
+
+            # Track pattern evolution
+            enhanced_features = self.network.get_enhanced_core_features()
+            pattern_info = {
+                'timestamp': time.time(),
+                'pattern_stability': enhanced_features['pattern_stability'],
+                'feature_summary': enhanced_features['feature_summary'],
+                'reward_correlations': enhanced_features['reward_correlations'],
+                'transfer_readiness': enhanced_features['pattern_stability']  # Simplified metric
             }
-            self.experience_buffer.append(experience)
+            self.pattern_evolution_history.append(pattern_info)
+
+            # Log pattern evolution
+            if self.logger:
+                self.logger.log_neural_pattern_evolution(pattern_info)
+
+            # Update neural-symbolic decision correlation if applicable
+            if self.neural_symbolic_decisions:
+                last_decision = self.neural_symbolic_decisions[-1]
+                if 'decision_info' in last_decision:
+                    decision_info = last_decision['decision_info']
+                    if hasattr(self.dual_brain, 'symbolic_decision_maker'):
+                        self.dual_brain.symbolic_decision_maker.update_neural_symbolic_correlation(decision_info,
+                                                                                                   reward)
+
+            # Standard learning process
             self.match_reward += reward
             self.total_reward += reward
-            
-            # Train networks with adaptive gamma
-            if (len(self.experience_buffer) >= self.min_buffer_size and 
-                self.training_steps % self.replay_frequency == 0):
-                self._train_networks()
-            
-            # Update target network
-            if self.use_soft_updates:
-                self.target_network.soft_update_from(self.main_network, self.soft_update_tau)
-                self.target_updates += 1
-            else:
-                if self.training_steps % self.target_update_frequency == 0:
-                    self.target_network.copy_weights_from(self.main_network)
-                    self.target_updates += 1
-            
-            self.training_steps += 1
-            
-            # Update dual brain core learning stats
-            self.dual_brain.brain.training_steps = self.training_steps
-            self.dual_brain.brain.target_updates = self.target_updates
-            self.dual_brain.brain.epsilon = self.exploration_rate
-            self.dual_brain.brain.total_loss = self.total_loss
-            self.dual_brain.brain.gamma = self.gamma
-            
-            # Decay exploration
+
+            # Update exploration
             if self.training_steps % 100 == 0:
                 if self.exploration_rate > self.min_exploration:
                     self.exploration_rate *= self.exploration_decay
-            
-            # Calculate knowledge effectiveness
-            self._update_knowledge_effectiveness()
-            
-            # Update match stats including adaptive learning parameters
-            if self.logger.current_match:
-                current_stats = {
-                    'match_reward': self.match_reward,
-                    'total_reward': self.total_reward,
-                    'actions_taken': self.actions_taken,
-                    'training_steps': self.training_steps,
-                    'target_updates': self.target_updates,
-                    'double_dqn_improvements': self.double_dqn_improvements,
-                    'exploration_rate_end': self.exploration_rate,
-                    'hit_to_score_bonuses': self.hit_to_score_bonuses,
-                    'total_bonus_reward': self.total_bonus_reward,
-                    'human_demos_used': self.human_demos_used,
-                    'user_demos_recorded': self.user_demos_recorded,
-                    'user_demos_processed': self.user_demos_processed,
-                    'symbolic_lessons_learned': self.lessons_learned_this_match,
-                    'strategies_discovered': self.strategies_discovered_this_match,
-                    'symbolic_decisions_made': self.symbolic_decisions_made,
-                    'neural_decisions_made': self.neural_decisions_made,
-                    'knowledge_effectiveness': self.knowledge_effectiveness,
-                    'gamma_used': self.gamma,
-                    'gamma_source': self.gamma_source,
-                    'learning_parameters_adapted': self.learning_parameters_adapted
+
+            self.training_steps += 1
+
+            # Extract transferable insights
+            self._extract_enhanced_transferable_insights(reward, done, enhanced_features)
+
+        except Exception as e:
+            print(f"❌ Enhanced learn error: {e}")
+
+    def _extract_enhanced_transferable_insights(self, reward: float, done: bool, enhanced_features: Dict):
+        """Extract enhanced insights that could transfer to other environments"""
+        try:
+            # High-level insights based on performance and patterns
+            if reward > 5.0 and enhanced_features['pattern_stability'] > 0.7:
+                insight = {
+                    'type': 'high_performance_stable_pattern',
+                    'reward': reward,
+                    'pattern_stability': enhanced_features['pattern_stability'],
+                    'core_features_snapshot': enhanced_features['feature_summary'],
+                    'environment': self.environment_id,
+                    'timestamp': time.time(),
+                    'transferable_principle': 'Stable neural patterns correlate with high performance'
                 }
-                self.logger.update_match_stats(current_stats)
-            
-            # Periodic reporting with adaptive learning insights
-            if self.training_steps % 500 == 0:
-                avg_loss = self.total_loss / max(1, self.training_steps)
-                strategy_performance = self.symbolic_decision_maker.get_strategy_performance_summary()
-                print(f"🚀 Agent step {self.training_steps}:")
-                print(f"   🎯 Target updates: {self.target_updates}, Exploration: {self.exploration_rate:.3f}")
-                print(f"   🔧 Adaptive Learning: Gamma={self.gamma:.3f} ({self.gamma_source})")
-                print(f"   🏗️ Environment integration: {'Active' if self.env else 'Inactive'}")
-                print(f"   🎳 Bonuses: {self.hit_to_score_bonuses}")
-                print(f"   👤 User demos: {len(self.user_demo_buffer)} available, {self.user_demos_processed} used")
-                print(f"   🧩 Symbolic decisions: {self.symbolic_decisions_made}, Neural: {self.neural_decisions_made}")
-                print(f"   📊 Knowledge effectiveness: {self.knowledge_effectiveness:.2f}")
-                if strategy_performance:
-                    print(f"   🎯 Strategy performance: {strategy_performance}")
-                
-                # Log symbolic insight including adaptive learning
-                if self.logger.current_match:
-                    insight = f"Training milestone: {self.training_steps} steps, gamma={self.gamma:.3f}, knowledge effectiveness: {self.knowledge_effectiveness:.2f}"
-                    self.logger.log_symbolic_insight("training_milestone", insight)
-                
+                self.cross_environment_insights.append(insight)
+
+            elif reward < -3.0:
+                insight = {
+                    'type': 'failure_pattern_with_instability',
+                    'reward': reward,
+                    'pattern_stability': enhanced_features['pattern_stability'],
+                    'environment': self.environment_id,
+                    'timestamp': time.time(),
+                    'transferable_principle': 'Unstable patterns lead to poor performance'
+                }
+                self.cross_environment_insights.append(insight)
+
+            # Keep only recent insights
+            if len(self.cross_environment_insights) > 50:
+                self.cross_environment_insights = self.cross_environment_insights[-50:]
+
         except Exception as e:
-            print(f"❌ Learn error: {e}")
+            print(f"❌ Error extracting enhanced transferable insights: {e}")
 
-    def _update_knowledge_effectiveness(self):
-        """Calculate knowledge system effectiveness"""
-        strategy_performance = self.symbolic_decision_maker.get_strategy_performance_summary()
-        if strategy_performance:
-            # Average performance of symbolic vs neural decisions
-            symbolic_perf = strategy_performance.get('symbolic', 0.0)  # 🔧 FIX: Use 0.0 (float)
-            neural_perf = strategy_performance.get('neural', 0.0)  # 🔧 FIX: Use 0.0 (float)
-
-            if neural_perf != 0.0:  # 🔧 FIX: Compare with 0.0 (float)
-                self.knowledge_effectiveness = max(0.0, symbolic_perf / neural_perf)  # 🔧 FIX: Use 0.0 (float)
-            else:
-                self.knowledge_effectiveness = 1.0 if symbolic_perf > 0.0 else 0.0  # 🔧 FIX: Use 0.0 and 1.0 (float)
-        else:
-            self.knowledge_effectiveness = 0.0  # 🔧 FIX: Use 0.0 (float)
-
-    def _train_networks(self):
-        """Enhanced training with adaptive gamma and symbolic context"""
-        # Use existing training implementation but with adaptive gamma
-        batch_size = min(self.replay_batch_size, len(self.experience_buffer))
-        batch = random.sample(list(self.experience_buffer), max(1, batch_size - 1))
-        
-        if len(self.user_demo_buffer) > 0:
-            human_demo = random.choice(list(self.user_demo_buffer))
-            batch.append(human_demo)
-            self.human_demos_used += 1
-            self.user_demos_processed += 1
-        
-        total_loss = 0
-        double_dqn_benefits = 0
-        
-        for experience in batch:
-            current_state = experience['state']
-            action = experience['action']
-            reward = experience['reward']
-            next_state = experience.get('next_state', current_state)
-            done = experience.get('done', False)
-            
-            next_q_main = self.main_network.forward(next_state)
-            best_next_action = np.argmax(next_q_main)
-            next_q_target = self.target_network.forward(next_state)
-            
-            if done:
-                target_q_value = reward
-            else:
-                # Use adaptive gamma here!
-                target_q_value = reward + self.gamma * next_q_target[best_next_action]
-            
-            if not done:
-                standard_dqn_target = reward + self.gamma * np.max(next_q_target)
-                if abs(target_q_value - standard_dqn_target) > 0.1:
-                    double_dqn_benefits += 1
-            
-            current_q_values = self.main_network.forward(current_state)
-            target_q_values = current_q_values.copy()
-            target_q_values[action] = target_q_value
-            
-            loss = self.main_network.update_weights(current_state, target_q_values, action)
-            total_loss += loss
-        
-        self.total_loss += total_loss / len(batch)
-        self.double_dqn_improvements += double_dqn_benefits
-
-    def record_user_demo(self, demo_dict):
-        """Enhanced user demonstration recording with environment-specific insights"""
+    def end_match(self, winner: str, final_scores: Dict, game_stats: Dict):
+        """End match with enhanced neural-symbolic analysis"""
         try:
-            if not all(key in demo_dict for key in ['state', 'action', 'reward', 'source', 'outcome']):
-                print(f"❌ Invalid demo data: missing required keys")
-                return False
-            
-            state = np.array(demo_dict["state"])
-            if state.shape[0] != self.state_size:
-                print(f"❌ Invalid demo state size: {state.shape[0]} != {self.state_size}")
-                return False
-            
-            action = demo_dict["action"]
-            if not (0 <= action < self.action_size):
-                print(f"❌ Invalid demo action: {action} not in range [0, {self.action_size})")
-                return False
-            
-            reward = demo_dict["reward"]
-            outcome = demo_dict["outcome"]
-            
-            # NEW: Use environment-specific interpretation for demo learning
-            if self.env and hasattr(self.env, 'format_user_demo_outcome'):
-                formatted_outcome = self.env.format_user_demo_outcome(outcome, reward)
-                print(f"👤 {formatted_outcome}")
-            
-            # Generate symbolic insight from demo using environment context
-            if outcome == "hit" and reward > 1.0:
-                if self.env and hasattr(self.env, 'generate_lesson_from_reward'):
-                    lesson = self.env.generate_lesson_from_reward(reward, context={'source': 'user_demo'})
-                else:
-                    lesson = f"User demonstrated successful technique with reward {reward:.1f}"
-                
-                if self.dual_brain.knowledge.add_lesson(self.app_name, lesson):
-                    self.lessons_learned_this_match += 1
-            
-            enhanced_demo = {
-                'state': state,
-                'action': action,
-                'reward': reward,
-                'source': demo_dict["source"],
-                'outcome': outcome,
-                'timestamp': time.time(),
-                'quality_score': self._evaluate_demo_quality(outcome, reward),
-                'learning_weight': self._calculate_demo_weight(outcome, reward)
-            }
-            
-            self.user_demo_buffer.append(enhanced_demo)
-            self.user_demos_recorded += 1
-            
-            if self.logger.current_match:
-                self.logger.log_user_demonstration(enhanced_demo)
-            
-            # Use environment-specific feedback if available
-            if self.env and hasattr(self.env, 'get_performance_feedback_phrase'):
-                feedback = self.env.get_performance_feedback_phrase("demo_quality", enhanced_demo['quality_score'] * 100)
-                print(f"👤 User demo recorded: Action={action}, Outcome={outcome}, {feedback}")
+            # Calculate enhanced transferable performance metrics
+            enhanced_metrics = self._calculate_enhanced_transferable_metrics()
+
+            # Update enhanced agent capabilities
+            self._update_enhanced_agent_capabilities(enhanced_metrics)
+
+            # End enhanced dual brain session
+            if hasattr(self.dual_brain, 'end_enhanced_session'):
+                self.dual_brain.end_enhanced_session(winner == "Agent Byte", self.match_reward,
+                                                     "Enhanced match completed")
             else:
-                print(f"👤 User demo recorded: Action={action}, Outcome={outcome}, Quality={enhanced_demo['quality_score']:.2f}")
-            
-            return True
-            
-        except Exception as e:
-            print(f"❌ Error recording user demo: {e}")
-            return False
+                # Fallback to regular end session
+                self.dual_brain.end_session(winner == "Agent Byte", self.match_reward, "Enhanced match completed")
 
-    def _evaluate_demo_quality(self, outcome, reward):
-        """Evaluate the quality of a user demonstration using environment constants if available"""
-        if self.env_constants:
-            demo_success_reward = self.env_constants.get('demo_success_reward', 1.5)
-            demo_failure_penalty = self.env_constants.get('demo_failure_penalty', -0.5)
-            positioning_reward = self.env_constants.get('positioning_reward', 0.1)
-            
-            if outcome == "hit":
-                return min(1.0, 0.8 + (reward / demo_success_reward) * 0.2)
-            elif outcome == "miss":
-                return max(0.1, 0.3 + (reward / abs(demo_failure_penalty)) * 0.1)
-            elif outcome == "positioning":
-                return max(0.2, 0.5 + (reward / positioning_reward) * 0.5)
-        else:
-            # Fallback to original logic
-            if outcome == "hit":
-                return min(1.0, 0.8 + reward * 0.2)
-            elif outcome == "miss":
-                return max(0.1, 0.3 + reward * 0.1)
-            elif outcome == "positioning":
-                return max(0.2, 0.5 + reward * 0.5)
-        
-        return 0.5
+            # End enhanced logging with neural-symbolic insights
+            enhanced_stats = {**game_stats, **enhanced_metrics}
+            self.logger.end_match(winner, final_scores, enhanced_stats)
 
-    def _calculate_demo_weight(self, outcome, reward):
-        """Calculate learning weight for demo using environment constants"""
-        base_weight = self.demo_learning_weight
-        
-        if self.env_constants:
-            demo_success_reward = self.env_constants.get('demo_success_reward', 1.5)
-            
-            if outcome == "hit" and reward > demo_success_reward * 0.7:
-                return base_weight * 1.5
-            elif outcome == "miss" and reward < 0:
-                return base_weight * 0.7
-            elif outcome == "positioning":
-                return base_weight * 0.8
-        else:
-            # Fallback to original logic
-            if outcome == "hit" and reward > 1.0:
-                return base_weight * 1.5
-            elif outcome == "miss" and reward < 0:
-                return base_weight * 0.7
-            elif outcome == "positioning":
-                return base_weight * 0.8
-        
-        return base_weight
+            # Save enhanced progress
+            self._save_enhanced_all_progress()
 
-    def _calculate_demo_effectiveness(self):
-        """Calculate how effective user demonstrations have been"""
-        if self.user_demos_processed == 0:
-            return 0.0
-        
-        usage_rate = self.user_demos_processed / max(1, len(self.user_demo_buffer))
-        match_performance = max(0, self.match_reward) / max(1, abs(self.match_reward))
-        
-        return min(1.0, (usage_rate + match_performance) / 2)
-
-    def end_match(self, winner, final_scores=None, game_stats=None):
-        """Enhanced match ending with modular environment integration"""
-        try:
-            # Determine outcome for symbolic learning
-            win = (winner == "Agent Byte")
-            
-            # NEW: Use environment-specific interpretation if available
-            if self.env and hasattr(self.env, 'interpret_reward'):
-                outcome_summary = self.env.interpret_reward(self.match_reward)
-            else:
-                outcome_summary = f"{'Victory' if win else 'Defeat'} with reward {self.match_reward:.1f}"
-            
-            # Generate strategic insights based on performance using environment context
-            if win and self.match_reward > 10:
-                if self.env and hasattr(self.env, 'generate_strategy_from_performance'):
-                    strategy = self.env.generate_strategy_from_performance(
-                        self.wins + 1, self.games_played + 1, self.match_reward
-                    )
-                else:
-                    strategy = f"Winning strategy: Achieved {self.match_reward:.1f} reward through consistent play"
-                
-                if self.dual_brain.knowledge.add_strategy(self.app_name, strategy):
-                    self.strategies_discovered_this_match += 1
-            
-            elif not win and self.match_reward < -5:
-                if self.env and hasattr(self.env, 'generate_lesson_from_reward'):
-                    lesson = self.env.generate_lesson_from_reward(self.match_reward, context={'match_end': True})
-                else:
-                    lesson = f"Loss pattern: Negative reward {self.match_reward:.1f} indicates strategy adjustment needed"
-                
-                if self.dual_brain.knowledge.add_lesson(self.app_name, lesson):
-                    self.lessons_learned_this_match += 1
-            
-            # Record result in symbolic knowledge
-            self.dual_brain.knowledge.record_game_result(self.app_name, win, self.match_reward, outcome_summary)
-            
-            # Generate reflections
-            reflections = self.dual_brain.knowledge.reflect_on_performance(self.app_name)
-            
-            # Analyze knowledge system performance
-            strategy_performance = self.symbolic_decision_maker.get_strategy_performance_summary()
-            
-            # End dual brain session
-            self.dual_brain.end_session(win, self.match_reward, outcome_summary)
-            
-            # Prepare final stats with adaptive learning info
-            final_stats = {
-                'match_reward': round(self.match_reward, 2),
-                'total_reward': round(self.total_reward, 2),
-                'actions_taken': self.actions_taken,
-                'training_steps': self.training_steps,
-                'target_updates': self.target_updates,
-                'double_dqn_improvements': self.double_dqn_improvements,
-                'exploration_rate_start': getattr(self, 'match_start_exploration', self.exploration_rate),
-                'exploration_rate_end': self.exploration_rate,
-                'architecture': 'Agent Byte v1.2 - Modular + Adaptive Learning + Knowledge System Enhanced',
-                'hit_to_score_bonuses': self.hit_to_score_bonuses,
-                'total_bonus_reward': round(self.total_bonus_reward, 2),
-                'human_demos_used': self.human_demos_used,
-                'user_demos_recorded': self.user_demos_recorded,
-                'user_demos_processed': self.user_demos_processed,
-                'symbolic_lessons_learned': self.lessons_learned_this_match,
-                'strategies_discovered': self.strategies_discovered_this_match,
-                'reflections_generated': len(reflections),
-                'symbolic_decisions_made': self.symbolic_decisions_made,
-                'neural_decisions_made': self.neural_decisions_made,
-                'knowledge_effectiveness': round(self.knowledge_effectiveness, 3),
-                'strategy_performance': strategy_performance,
-                'gamma_used': round(self.gamma, 4),
-                'gamma_source': self.gamma_source,
-                'default_gamma': round(self.default_gamma, 4),
-                'learning_parameters_adapted': self.learning_parameters_adapted,
-                'environment_learning_metadata': self.environment_learning_metadata,
-                'environment_integrated': self.env is not None,
-                'modular_behavior_active': hasattr(self.env, 'interpret_reward') if self.env else False
-            }
-            
-            if game_stats:
-                final_stats.update(game_stats)
-            
-            # End logging
-            self.logger.end_match(winner, final_scores or {'player': 0, 'agent_byte': 0}, final_stats)
-            
             self.games_played += 1
             if winner == "Agent Byte":
                 self.wins += 1
-            
-            print(f"🏁 Match ended: {winner} wins!")
-            print(f"   💰 Match reward: {self.match_reward:.1f}")
-            print(f"   🏗️ Environment integration: {'Active' if self.env else 'Inactive'}")
-            print(f"   🎳 Hit-to-Score bonuses: {self.hit_to_score_bonuses}")
-            print(f"   👤 User demos: recorded={self.user_demos_recorded}, used={self.user_demos_processed}")
-            print(f"   🧩 Knowledge system: {self.symbolic_decisions_made} symbolic, {self.neural_decisions_made} neural decisions")
-            print(f"   📊 Knowledge effectiveness: {self.knowledge_effectiveness:.2f}")
-            print(f"   🔧 Learning: Gamma={self.gamma:.3f} ({self.gamma_source}), Adapted={self.learning_parameters_adapted}")
-            print(f"   🤔 Generated {len(reflections)} new reflections")
-            if strategy_performance:
-                print(f"   🎯 Strategy performance: {strategy_performance}")
-            
-            return final_stats
-            
+
+            print(f"🏁 Enhanced {self.environment_id} match ended: {winner} wins!")
+            print(f"   🔄 Transferable skills used: {len(self.transferable_skills_used)}")
+            print(f"   📊 Transfer events: {len(self.knowledge_transfer_events)}")
+            print(f"   🧠🧩 Neural-symbolic decisions: {len(self.neural_symbolic_decisions)}")
+            print(f"   📊 Pattern evolution events: {len(self.pattern_evolution_history)}")
+            print(f"   🌍 Cross-env insights: {len(self.cross_environment_insights)}")
+
+            return enhanced_stats
+
         except Exception as e:
-            print(f"❌ Error in end_match: {e}")
-            return None
+            print(f"❌ Error in enhanced end_match: {e}")
+            return game_stats
 
-    def get_stats(self):
-        """Enhanced stats including adaptive learning parameters, knowledge system metrics, and environment integration"""
-        avg_reward_per_game = self.total_reward / max(1, self.games_played)
-        win_rate = self.wins / max(1, self.games_played)
-        avg_loss = self.total_loss / max(1, self.training_steps)
-        
-        if self.exploration_rate > 0.6:
-            learning_phase = "Exploring"
-        elif self.exploration_rate > 0.4:
-            learning_phase = "Learning"
-        elif self.exploration_rate > 0.25:
-            learning_phase = "Optimizing"
-        else:
-            learning_phase = "Expert"
-        
-        recent_perf = self.logger.get_recent_performance()
-        
-        # Get symbolic knowledge summary
-        knowledge_summary = {}
-        if self.app_name and self.app_context:
-            knowledge_summary = {
-                'strategies_available': len(self.app_context.get('strategies', [])),
-                'lessons_learned': len(self.app_context.get('lessons', [])),
-                'reflections_made': len(self.app_context.get('symbolic_reflections', [])),
-                'symbolic_win_rate': self.dual_brain.knowledge._calculate_win_rate(self.app_context)
-            }
-        
-        # Get strategy performance summary
-        strategy_performance = self.symbolic_decision_maker.get_strategy_performance_summary()
-        
-        stats = {
-            'games_played': int(self.games_played),
-            'wins': int(self.wins),
-            'win_rate': float(round(win_rate * 100, 1)),
-            'exploration_rate': float(round(self.exploration_rate, 3)),
-            'avg_reward_per_game': float(round(avg_reward_per_game, 2)),
-            'match_reward': float(round(self.match_reward, 1)),
-            'total_reward': float(round(self.total_reward, 1)),
-            'actions_taken': int(self.actions_taken),
-            'training_steps': int(self.training_steps),
-            'experience_buffer_size': int(len(self.experience_buffer)),
-            'avg_loss': float(round(avg_loss, 4)) if self.training_steps > 0 else 0.0,
-            'learning_rate': float(self.learning_rate),
-            'learning_phase': learning_phase,
-            'strategic_moves': int(self.strategic_moves),
-            'hit_to_score_bonuses': int(self.hit_to_score_bonuses),
-            'total_bonus_reward': float(round(self.total_bonus_reward, 2)),
-            'human_demos_used': int(self.human_demos_used),
-            'user_demos_recorded': int(self.user_demos_recorded),
-            'user_demos_processed': int(self.user_demos_processed),
-            'user_demo_buffer_size': int(len(self.user_demo_buffer)),
-            'demo_learning_weight': float(self.demo_learning_weight),
-            'demo_replay_ratio': float(self.demo_replay_ratio),
-            'architecture': 'Agent Byte v1.2 - Modular + Adaptive Learning + Knowledge System Enhanced',
-            'target_updates': int(self.target_updates),
-            'double_dqn_improvements': int(self.double_dqn_improvements),
-            'network_parameters': 15000,
-            'ball_tracking_score': float(round(avg_loss, 4)),
-            
-            # Symbolic learning stats
-            'lessons_learned_this_match': int(self.lessons_learned_this_match),
-            'strategies_discovered_this_match': int(self.strategies_discovered_this_match),
-            
-            # Knowledge system stats
-            'symbolic_decisions_made': int(self.symbolic_decisions_made),
-            'neural_decisions_made': int(self.neural_decisions_made),
-            'knowledge_effectiveness': float(round(self.knowledge_effectiveness, 3)),
-            'strategy_performance': strategy_performance,
-            
-            # Adaptive learning stats
-            'gamma': float(round(self.gamma, 4)),
-            'gamma_source': self.gamma_source,
-            'default_gamma': float(round(self.default_gamma, 4)),
-            'environment_gamma': float(round(self.environment_gamma, 4)) if self.environment_gamma else None,
-            'learning_parameters_adapted': self.learning_parameters_adapted,
-            'environment_learning_metadata': self.environment_learning_metadata,
-            
-            # NEW: Modular environment integration stats
-            'environment_integrated': self.env is not None,
-            'environment_name': self.env_context.get('name', 'unknown') if self.env_context else 'none',
-            'environment_constants_loaded': len(self.env_constants),
-            'modular_behavior_active': hasattr(self.env, 'interpret_reward') if self.env else False,
-            'environment_specific_learning': bool(self.env and hasattr(self.env, 'generate_lesson_from_reward')),
-            
-            **knowledge_summary
-        }
-        
-        if recent_perf:
-            stats['recent_performance'] = recent_perf
-        
-        return stats
+    def _calculate_enhanced_transferable_metrics(self) -> Dict[str, Any]:
+        """Calculate enhanced metrics relevant to neural-symbolic transfer learning"""
+        try:
+            # Enhanced transferable skills effectiveness with pattern analysis
+            skills_effectiveness = []
+            pattern_stability_scores = []
 
-    def get_detailed_knowledge_analysis(self):
-        """Get detailed analysis of knowledge application including adaptive learning and environment integration"""
-        if not self.app_context:
-            return "No active knowledge context"
-        
-        strategy_performance = self.symbolic_decision_maker.get_strategy_performance_summary()
-        
-        analysis = f"""
-🧩 MODULAR KNOWLEDGE SYSTEM ANALYSIS - Agent Byte v1.2
-═══════════════════════════════════════════════════════════════
+            for skill in self.transferable_skills_used:
+                effectiveness = skill.get('effectiveness', 0.5)
+                stability = skill.get('pattern_stability', 0.5)
+                skills_effectiveness.append(effectiveness)
+                pattern_stability_scores.append(stability)
 
-📊 Strategy Performance:
-{self._format_strategy_performance(strategy_performance)}
+            avg_skills_effectiveness = np.mean(skills_effectiveness) if skills_effectiveness else 0.0
+            avg_pattern_stability = np.mean(pattern_stability_scores) if pattern_stability_scores else 0.0
 
-🎯 Available Knowledge:
-   Environmental Strategies: {len(self.app_context.get('environment_context', {}).get('strategic_concepts', {}).get('core_skills', []))}
-   Tactical Approaches: {len(self.app_context.get('environment_context', {}).get('tactical_approaches', []))}
-   Learned Strategies: {len(self.app_context.get('strategies', []))}
-   Lessons Learned: {len(self.app_context.get('lessons', []))}
+            # Neural-symbolic decision coherence
+            neural_decisions = len([d for d in self.neural_symbolic_decisions
+                                    if d.get('decision_info', {}).get('decision_type') == 'neural'])
+            symbolic_decisions = len([d for d in self.neural_symbolic_decisions
+                                      if d.get('decision_info', {}).get('decision_type') == 'symbolic'])
+            total_decisions = max(1, neural_decisions + symbolic_decisions)
 
-🔄 Decision Distribution:
-   Symbolic Decisions: {self.symbolic_decisions_made} ({(self.symbolic_decisions_made/(max(1, self.symbolic_decisions_made + self.neural_decisions_made))*100):.1f}%)
-   Neural Decisions: {self.neural_decisions_made} ({(self.neural_decisions_made/(max(1, self.symbolic_decisions_made + self.neural_decisions_made))*100):.1f}%)
+            decision_balance = symbolic_decisions / total_decisions
 
-📈 Knowledge Effectiveness: {self.knowledge_effectiveness:.3f}
-
-🏗️ Environment Integration:
-   Environment Active: {'Yes' if self.env else 'No'}
-   Environment Name: {self.env_context.get('name', 'unknown') if self.env_context else 'none'}
-   Constants Loaded: {len(self.env_constants)}
-   Modular Behavior: {'Active' if (self.env and hasattr(self.env, 'interpret_reward')) else 'Inactive'}
-   Environment Learning: {'Active' if (self.env and hasattr(self.env, 'generate_lesson_from_reward')) else 'Inactive'}
-
-⚙️ Adaptive Learning Status:
-   Current Gamma: {self.gamma:.4f}
-   Gamma Source: {self.gamma_source}
-   Default Gamma: {self.default_gamma:.4f}
-   Parameters Adapted: {'Yes' if self.learning_parameters_adapted else 'No'}
-   {f'Environment Gamma: {self.environment_gamma:.4f}' if self.environment_gamma else ''}
-
-📋 Recent Strategic Decisions:
-{self._format_recent_decisions()}
-        """
-        
-        return analysis.strip()
-    
-    def _format_strategy_performance(self, performance):
-        if not performance:
-            return "   No performance data yet"
-        
-        lines = []
-        for strategy_type, avg_reward in performance.items():
-            status = "✅" if avg_reward > 0 else "❌" if avg_reward < -0.5 else "⚖️"
-            lines.append(f"   {status} {strategy_type}: {avg_reward:+.3f} avg reward")
-        
-        return "\n".join(lines)
-    
-    def _format_recent_decisions(self):
-        recent = self.symbolic_decision_maker.decision_history[-5:]
-        if not recent:
-            return "   No recent decisions"
-        
-        lines = []
-        for i, decision in enumerate(recent, 1):
-            if decision['chosen'] == 'symbolic':
-                lines.append(f"   {i}. 🧩 {decision['reasoning']}")
+            # Pattern evolution analysis
+            if len(self.pattern_evolution_history) >= 2:
+                early_stability = np.mean([p['pattern_stability'] for p in
+                                           self.pattern_evolution_history[:len(self.pattern_evolution_history) // 2]])
+                late_stability = np.mean([p['pattern_stability'] for p in
+                                          self.pattern_evolution_history[len(self.pattern_evolution_history) // 2:]])
+                pattern_improvement = late_stability - early_stability
             else:
-                lines.append(f"   {i}. 🧠 Neural network")
-        
-        return "\n".join(lines)
+                pattern_improvement = 0.0
 
-    def save_brain(self, filename=None):
-        """Save dual brain system with adaptive learning metadata and environment integration info"""
-        # Save both brains
-        success = self.dual_brain.save_all()
-        
-        if success:
-            win_rate = (self.wins / max(1, self.games_played)) * 100
-            print(f"💾 Agent Byte v1.2 Modular + Adaptive Learning + Knowledge System Enhanced saved!")
-            print(f"   📊 Games: {self.games_played}, Win rate: {win_rate:.1f}%")
-            print(f"   🧠 Core brain: {self.training_steps} steps, {self.target_updates} updates")
-            print(f"   🧩 Knowledge: {len(self.dual_brain.knowledge.knowledge.get('categories', {}).get('games', {}))} environments")
-            print(f"   🎯 Knowledge effectiveness: {self.knowledge_effectiveness:.3f}")
-            print(f"   🔧 Adaptive learning: Gamma={self.gamma:.3f} ({self.gamma_source})")
-            print(f"   🏗️ Environment integration: {'Active' if self.env else 'Inactive'}")
-        
-        return success
+            # Knowledge transfer success rate
+            successful_transfers = len([event for event in self.knowledge_transfer_events
+                                        if event.get('success_rate', 0) > 0.5])
+            transfer_success_rate = successful_transfers / max(1, len(self.knowledge_transfer_events))
 
-    def load_brain(self, filename=None):
-        """Load dual brain system (automatically handled during initialization)"""
-        # Brain loading is handled by dual brain system initialization
-        return True
-
-
-# Test section
-if __name__ == "__main__":
-    print("🧪 Testing Enhanced Modular Agent Byte with Environment Integration...")
-    
-    # Test with environment context that includes learning parameters
-    test_env_context = {
-        'name': 'test_pong',
-        'learning_parameters': {
-            'recommended_gamma': 0.90,
-            'gamma_rationale': 'Short-term competitive game with immediate feedback',
-            'recommended_learning_rate': 0.001,
-            'temporal_characteristics': {
-                'match_duration': '2-5 minutes',
-                'feedback_immediacy': 'Immediate'
-            }
-        }
-    }
-    
-    agent = AgentByte(state_size=14, action_size=3, app_name="test_pong")
-    
-    # Test environment integration
-    class MockEnvironment:
-        def get_environment_specific_constants(self):
             return {
-                'hit_to_score_bonus_threshold': 3.5,
-                'high_reward_threshold': 5.0,
-                'task_completion_bonus': 3.0,
-                'demo_success_reward': 1.5,
-                'demo_failure_penalty': -0.5,
-                'positioning_reward': 0.1
+                'transferable_skills_effectiveness': avg_skills_effectiveness,
+                'pattern_stability_score': avg_pattern_stability,
+                'neural_symbolic_coherence': decision_balance,
+                'pattern_improvement_trajectory': pattern_improvement,
+                'knowledge_transfer_success_rate': transfer_success_rate,
+                'cross_environment_insights_generated': len(self.cross_environment_insights),
+                'adaptation_speed': self.training_steps / max(1, self.games_played),
+                'enhanced_pattern_recognition': avg_pattern_stability * avg_skills_effectiveness,
+                'transfer_readiness_score': min(1.0,
+                                                avg_skills_effectiveness * avg_pattern_stability * decision_balance)
             }
-        
-        def interpret_reward(self, reward):
-            if reward >= 4.0:
-                return "Excellent combo execution"
-            elif reward >= 1.0:
-                return "Successful task completion"
+
+        except Exception as e:
+            print(f"❌ Error calculating enhanced transferable metrics: {e}")
+            return {}
+
+    def _update_enhanced_agent_capabilities(self, enhanced_metrics: Dict[str, Any]):
+        """Update enhanced agent capabilities in profile"""
+        try:
+            capabilities = self.profile.get('enhanced_capabilities', {})
+            neural_symbolic = self.profile.get('neural_symbolic_integration', {})
+
+            # Update enhanced transferable skills
+            if self.transferable_skills_used:
+                for skill in self.transferable_skills_used:
+                    skill_record = {
+                        'name': skill['name'],
+                        'environment': self.environment_id,
+                        'confidence': skill.get('effectiveness', 0.5),
+                        'pattern_stability': skill.get('pattern_stability', 0.5),
+                        'neural_symbolic_derived': True,
+                        'last_used': time.time()
+                    }
+
+                    # Add or update skill
+                    existing_skills = capabilities.get('transferable_skills', [])
+                    skill_found = False
+                    for existing_skill in existing_skills:
+                        if existing_skill['name'] == skill['name']:
+                            existing_skill.update(skill_record)
+                            skill_found = True
+                            break
+
+                    if not skill_found:
+                        existing_skills.append(skill_record)
+
+                    capabilities['transferable_skills'] = existing_skills
+
+            # Update enhanced capabilities
+            capabilities['learning_efficiency'] = enhanced_metrics.get('transferable_skills_effectiveness', 0.0)
+            capabilities['adaptation_speed'] = enhanced_metrics.get('adaptation_speed', 0.0)
+            capabilities['neural_symbolic_coherence'] = enhanced_metrics.get('neural_symbolic_coherence', 0.0)
+            capabilities['pattern_recognition_ability'] = enhanced_metrics.get('enhanced_pattern_recognition', 0.0)
+            capabilities['cross_environment_transfer_rate'] = enhanced_metrics.get('knowledge_transfer_success_rate',
+                                                                                   0.0)
+
+            # Update neural-symbolic integration metrics
+            neural_symbolic['decision_correlation_rate'] = enhanced_metrics.get('neural_symbolic_coherence', 0.0)
+            neural_symbolic['pattern_stability_score'] = enhanced_metrics.get('pattern_stability_score', 0.0)
+            neural_symbolic['transfer_effectiveness'] = enhanced_metrics.get('transfer_readiness_score', 0.0)
+
+            self.profile['enhanced_capabilities'] = capabilities
+            self.profile['neural_symbolic_integration'] = neural_symbolic
+            self._save_enhanced_agent_profile()
+
+        except Exception as e:
+            print(f"❌ Error updating enhanced agent capabilities: {e}")
+
+    def _save_enhanced_all_progress(self):
+        """Save all enhanced agent progress including networks, neural patterns, and knowledge"""
+        try:
+            # Save enhanced neural networks with pattern data
+            self.network.save_network(self.network_file)
+
+            # Save enhanced dual brain system
+            if hasattr(self.dual_brain, 'save_enhanced_all'):
+                self.dual_brain.save_enhanced_all()
             else:
-                return "Learning opportunity"
-        
-        def generate_lesson_from_reward(self, reward, context=None):
-            interpretation = self.interpret_reward(reward)
-            source = context.get('source', 'general') if context else 'general'
-            return f"Environment lesson ({source}): {interpretation} (reward={reward:.1f})"
-        
-        def should_generate_lesson(self, reward):
-            return abs(reward) > 1.0
-        
-        def should_generate_strategy(self, reward):
-            return reward > 5.0
-        
-        def generate_strategy_from_performance(self, wins, games, avg_reward):
-            win_rate = (wins / max(1, games)) * 100
-            if win_rate > 70:
-                return f"Dominant strategy: {win_rate:.1f}% win rate with {avg_reward:.1f} avg reward"
-            elif win_rate > 50:
-                return f"Effective strategy: {win_rate:.1f}% win rate, focus on consistency"
-            else:
-                return f"Developing strategy: {win_rate:.1f}% win rate, need improvement"
-        
-        def format_user_demo_outcome(self, outcome, reward):
-            return f"Mock environment demo analysis: {outcome} with reward {reward:.2f}"
-        
-        def get_performance_feedback_phrase(self, metric_type, value):
-            if metric_type == "demo_quality":
-                if value > 80:
-                    return "Excellent technique demonstrated"
-                elif value > 60:
-                    return "Good form shown"
-                elif value > 40:
-                    return "Average execution"
-                else:
-                    return "Needs improvement"
-            return f"Performance: {value:.1f}"
-    
-    # Set mock environment
-    mock_env = MockEnvironment()
-    agent.set_environment(mock_env)
-    
-    agent.start_new_match("test_pong", env_context=test_env_context)
-    
+                # Fallback to regular save
+                self.dual_brain.save_all()
+
+            # Save neural pattern evolution data
+            self._save_neural_pattern_data()
+
+            # Save decision correlation data
+            self._save_decision_correlation_data()
+
+            # Update profile with current environment if not already present
+            if self.environment_id not in self.profile.get('environments', []):
+                self.profile['environments'].append(self.environment_id)
+                self._save_enhanced_agent_profile()
+
+            return True
+
+        except Exception as e:
+            print(f"❌ Error saving enhanced progress: {e}")
+            return False
+
+    def _save_neural_pattern_data(self):
+        """Save neural pattern evolution data"""
+        try:
+            pattern_data = {
+                'agent_id': self.agent_id,
+                'environment_id': self.environment_id,
+                'saved_at': datetime.datetime.now().isoformat(),
+                'architecture_version': 'Agent Byte v2.1 - Neural-Symbolic Integration',
+                'pattern_evolution_history': self.pattern_evolution_history[-100:],  # Keep recent
+                'transferable_insights': self.cross_environment_insights[-50:],
+                'pattern_statistics': {
+                    'total_patterns_tracked': len(self.pattern_evolution_history),
+                    'average_stability': np.mean([p['pattern_stability'] for p in
+                                                  self.pattern_evolution_history]) if self.pattern_evolution_history else 0.0,
+                    'stability_improvement': self._calculate_pattern_improvement(),
+                    'transfer_readiness': self._calculate_pattern_transfer_readiness()
+                }
+            }
+
+            with open(self.neural_patterns_file, 'w') as f:
+                json.dump(pattern_data, f, indent=2)
+
+            print(f"🔍 Neural pattern data saved: {len(self.pattern_evolution_history)} patterns tracked")
+
+        except Exception as e:
+            print(f"❌ Error saving neural pattern data: {e}")
+
+    def _save_decision_correlation_data(self):
+        """Save neural-symbolic decision correlation data"""
+        try:
+            correlation_data = {
+                'agent_id': self.agent_id,
+                'environment_id': self.environment_id,
+                'saved_at': datetime.datetime.now().isoformat(),
+                'neural_symbolic_decisions': self.neural_symbolic_decisions[-100:],  # Keep recent
+                'correlation_statistics': {
+                    'total_decisions': len(self.neural_symbolic_decisions),
+                    'neural_decisions': len([d for d in self.neural_symbolic_decisions
+                                             if d.get('decision_info', {}).get('decision_type') == 'neural']),
+                    'symbolic_decisions': len([d for d in self.neural_symbolic_decisions
+                                               if d.get('decision_info', {}).get('decision_type') == 'symbolic']),
+                    'average_coherence': self._calculate_decision_coherence(),
+                    'integration_effectiveness': self._calculate_integration_effectiveness()
+                }
+            }
+
+            with open(self.decision_correlations_file, 'w') as f:
+                json.dump(correlation_data, f, indent=2)
+
+            print(f"🔗 Decision correlation data saved: {len(self.neural_symbolic_decisions)} decisions tracked")
+
+        except Exception as e:
+            print(f"❌ Error saving decision correlation data: {e}")
+
+    def _calculate_pattern_improvement(self) -> float:
+        """Calculate pattern stability improvement over time"""
+        if len(self.pattern_evolution_history) < 10:
+            return 0.0
+
+        early_patterns = self.pattern_evolution_history[:len(self.pattern_evolution_history) // 2]
+        late_patterns = self.pattern_evolution_history[len(self.pattern_evolution_history) // 2:]
+
+        early_stability = np.mean([p['pattern_stability'] for p in early_patterns])
+        late_stability = np.mean([p['pattern_stability'] for p in late_patterns])
+
+        return late_stability - early_stability
+
+    def _calculate_pattern_transfer_readiness(self) -> float:
+        """Calculate how ready patterns are for transfer to other environments"""
+        if not self.pattern_evolution_history:
+            return 0.0
+
+        recent_patterns = self.pattern_evolution_history[-20:] if len(
+            self.pattern_evolution_history) >= 20 else self.pattern_evolution_history
+        stability_scores = [p['pattern_stability'] for p in recent_patterns]
+
+        avg_stability = np.mean(stability_scores)
+        stability_consistency = 1.0 - np.var(stability_scores) if len(stability_scores) > 1 else 0.0
+
+        return (avg_stability * 0.7 + stability_consistency * 0.3)
+
+    def _calculate_decision_coherence(self) -> float:
+        """Calculate coherence between neural and symbolic decisions"""
+        if not self.neural_symbolic_decisions:
+            return 0.0
+
+        coherent_decisions = 0
+        total_decisions = len(self.neural_symbolic_decisions)
+
+        for decision in self.neural_symbolic_decisions:
+            decision_info = decision.get('decision_info', {})
+            neural_action = decision_info.get('neural_action')
+            symbolic_action = decision_info.get('symbolic_action')
+
+            if neural_action == symbolic_action:
+                coherent_decisions += 1
+
+        return coherent_decisions / total_decisions
+
+    def _calculate_integration_effectiveness(self) -> float:
+        """Calculate effectiveness of neural-symbolic integration"""
+        if not self.neural_symbolic_decisions:
+            return 0.0
+
+        symbolic_decisions = [d for d in self.neural_symbolic_decisions
+                              if d.get('decision_info', {}).get('decision_type') == 'symbolic']
+
+        if not symbolic_decisions:
+            return 0.0
+
+        # Integration effectiveness based on symbolic decision success
+        integration_rate = len(symbolic_decisions) / len(self.neural_symbolic_decisions)
+        coherence_rate = self._calculate_decision_coherence()
+
+        return (integration_rate * 0.6 + coherence_rate * 0.4)
+
+    def get_enhanced_transfer_readiness_report(self) -> Dict[str, Any]:
+        """Generate enhanced report on agent's readiness for transfer learning"""
+        try:
+            capabilities = self.profile.get('enhanced_capabilities', {})
+            neural_symbolic = self.profile.get('neural_symbolic_integration', {})
+            transferable_skills = capabilities.get('transferable_skills', [])
+
+            # Enhanced readiness calculation
+            pattern_readiness = self._calculate_pattern_transfer_readiness()
+            decision_coherence = neural_symbolic.get('decision_correlation_rate', 0.0)
+            skills_confidence = np.mean(
+                [s.get('confidence', 0) for s in transferable_skills]) if transferable_skills else 0.0
+
+            transfer_readiness_score = (pattern_readiness * 0.4 + decision_coherence * 0.3 + skills_confidence * 0.3)
+
+            return {
+                'agent_id': self.agent_id,
+                'current_environment': self.environment_id,
+                'architecture_version': 'Agent Byte v2.1 - Neural-Symbolic Integration',
+                'total_environments_experienced': len(self.profile.get('environments', [])),
+                'transferable_skills_learned': len(transferable_skills),
+                'enhanced_capabilities': capabilities,
+                'neural_symbolic_integration': neural_symbolic,
+                'pattern_analysis': {
+                    'pattern_stability_score': pattern_readiness,
+                    'pattern_improvement': self._calculate_pattern_improvement(),
+                    'patterns_tracked': len(self.pattern_evolution_history)
+                },
+                'decision_analysis': {
+                    'neural_symbolic_coherence': decision_coherence,
+                    'integration_effectiveness': self._calculate_integration_effectiveness(),
+                    'decisions_tracked': len(self.neural_symbolic_decisions)
+                },
+                'transfer_readiness_score': transfer_readiness_score,
+                'recommended_next_environments': self._recommend_enhanced_next_environments(),
+                'enhanced_network_architecture': f"256→{self.network.core_sizes}→{self.network.adapter_size}→{self.action_size}",
+                'neural_symbolic_compatible': True
+            }
+
+        except Exception as e:
+            print(f"❌ Error generating enhanced transfer readiness report: {e}")
+            return {}
+
+    def _recommend_enhanced_next_environments(self) -> List[str]:
+        """Recommend next environments based on enhanced neural-symbolic analysis"""
+        capabilities = self.profile.get('enhanced_capabilities', {})
+        learned_skills = [skill['name'] for skill in capabilities.get('transferable_skills', [])]
+
+        recommendations = []
+
+        # Enhanced recommendations based on neural-symbolic capabilities
+        if any('prediction' in skill.lower() for skill in learned_skills):
+            recommendations.extend(['trajectory_prediction_games', 'forecasting_challenges'])
+        if any('timing' in skill.lower() for skill in learned_skills):
+            recommendations.extend(['rhythm_based_games', 'real_time_strategy'])
+        if any('strategy' in skill.lower() or 'positioning' in skill.lower() for skill in learned_skills):
+            recommendations.extend(['strategic_games', 'spatial_reasoning_tasks'])
+        if capabilities.get('neural_symbolic_coherence', 0) > 0.7:
+            recommendations.extend(['complex_reasoning_environments', 'multi_domain_challenges'])
+        if capabilities.get('pattern_recognition_ability', 0) > 0.8:
+            recommendations.extend(['pattern_matching_games', 'anomaly_detection_tasks'])
+
+        # Remove duplicates and return top recommendations
+        return list(dict.fromkeys(recommendations))[:5]
+
+    def get_stats(self) -> Dict[str, Any]:
+        """Get enhanced agent statistics with neural-symbolic metrics"""
+        capabilities = self.profile.get('enhanced_capabilities', {})
+        neural_symbolic = self.profile.get('neural_symbolic_integration', {})
+
+        return {
+            'games_played': self.games_played,
+            'wins': self.wins,
+            'win_rate': (self.wins / max(1, self.games_played)) * 100,
+            'total_reward': self.total_reward,
+            'training_steps': self.training_steps,
+            'exploration_rate': self.exploration_rate,
+            'actions_taken': self.actions_taken,
+
+            # Enhanced neural-symbolic metrics
+            'neural_symbolic_integration': neural_symbolic.get('enabled', False),
+            'pattern_stability_score': neural_symbolic.get('pattern_stability_score', 0.0),
+            'decision_correlation_rate': neural_symbolic.get('decision_correlation_rate', 0.0),
+            'transfer_effectiveness': neural_symbolic.get('transfer_effectiveness', 0.0),
+            'transferable_skills_count': len(capabilities.get('transferable_skills', [])),
+            'cross_environment_ready': len(self.profile.get('environments', [])) > 1,
+            'enhanced_learning_efficiency': capabilities.get('learning_efficiency', 0.0),
+            'neural_symbolic_coherence': capabilities.get('neural_symbolic_coherence', 0.0),
+            'pattern_recognition_ability': capabilities.get('pattern_recognition_ability', 0.0),
+
+            # Current session metrics
+            'current_match_reward': self.match_reward,
+            'current_session_patterns': len(self.pattern_evolution_history),
+            'current_session_decisions': len(self.neural_symbolic_decisions),
+            'current_session_insights': len(self.cross_environment_insights)
+        }
+
+
+# Alias for backward compatibility
+AgentByte = EnhancedAgentByte
+
+# Example usage and testing
+if __name__ == "__main__":
+    print("🧪 Testing Enhanced Agent Byte v2.1 with Neural-Symbolic Integration...")
+
+    # Create enhanced test agent
+    agent = EnhancedAgentByte(
+        agent_id="test_enhanced_agent_001",
+        environment_id="pong",
+        raw_state_size=14,
+        action_size=3
+    )
+
+    # Test enhanced network with pattern tracking
     test_state = np.random.random(14)
-    
-    # Test some actions and learning with environment integration
-    test_rewards = [5.0, -2.0, 1.5, 4.2, -0.5, 6.1, 0.8]
-    for i, reward in enumerate(test_rewards):
+    q_values = agent.network.forward(test_state)
+    enhanced_features = agent.network.get_enhanced_core_features()
+
+    print(f"\n🧠 Enhanced Network Test:")
+    print(f"   Input: {test_state.shape} → Output: {q_values.shape}")
+    print(f"   Pattern stability: {enhanced_features['pattern_stability']:.2f}")
+    print(f"   Feature summary: {enhanced_features['feature_summary']}")
+
+    # Test enhanced transferable skills with neural-symbolic integration
+    agent.start_new_match("enhanced_test_match_001")
+
+    # Simulate enhanced learning with neural-symbolic decisions
+    for i in range(20):
         action = agent.get_action(test_state)
-        agent.learn(reward=reward, next_state=test_state, done=False)
-        print(f"Action {i+1}: {action}, Reward: {reward:.2f}")
-    
-    # Test user demo with environment integration
-    demo_success = agent.record_user_demo({
-        'state': test_state.tolist(),
-        'action': 1,
-        'reward': 1.5,
-        'source': 'user_action',
-        'outcome': 'hit'
-    })
-    
-    print(f"Demo recording successful: {demo_success}")
-    
-    # Test another demo with different outcome
-    demo_success2 = agent.record_user_demo({
-        'state': test_state.tolist(),
-        'action': 0,
-        'reward': -0.3,
-        'source': 'user_action',
-        'outcome': 'miss'
-    })
-    
-    print(f"Second demo recording successful: {demo_success2}")
-    
-    # Show detailed analysis
-    print("\n" + "="*70)
-    print(agent.get_detailed_knowledge_analysis())
-    
-    # Show stats
-    print("\n" + "="*70)
-    stats = agent.get_stats()
-    print("📊 AGENT STATS SUMMARY:")
-    print(f"   🎮 Games played: {stats['games_played']}")
-    print(f"   🏆 Win rate: {stats['win_rate']}%")
-    print(f"   🧠 Training steps: {stats['training_steps']}")
-    print(f"   🧩 Symbolic decisions: {stats['symbolic_decisions_made']}")
-    print(f"   🤖 Neural decisions: {stats['neural_decisions_made']}")
-    print(f"   📈 Knowledge effectiveness: {stats['knowledge_effectiveness']}")
-    print(f"   🔧 Gamma: {stats['gamma']} ({stats['gamma_source']})")
-    print(f"   🏗️ Environment integrated: {stats['environment_integrated']}")
-    print(f"   ⚙️ Modular behavior active: {stats['modular_behavior_active']}")
-    
-    # End match
-    final_stats = agent.end_match("Agent Byte", {'player': 15, 'agent_byte': 21})
-    
-    # Save everything
-    save_success = agent.save_brain()
-    
-    print(f"\n✅ Enhanced Modular Agent Byte v1.2 test complete!")
-    print(f"🧩 Symbolic decisions: {agent.symbolic_decisions_made}")
-    print(f"🧠 Neural decisions: {agent.neural_decisions_made}")
-    print(f"📊 Knowledge effectiveness: {agent.knowledge_effectiveness:.3f}")
-    print(f"🔧 Gamma adapted: {agent.default_gamma:.3f} → {agent.gamma:.3f} ({agent.gamma_source})")
-    print(f"⚙️ Learning parameters adapted: {agent.learning_parameters_adapted}")
-    print(f"🏗️ Environment integration: {'Active' if agent.env else 'Inactive'}")
-    print(f"🎯 Modular behavior: {'Working' if hasattr(agent.env, 'interpret_reward') else 'Not available'}")
-    print(f"💾 Brain save successful: {save_success}")
-    
-    if final_stats:
-        print(f"📋 Final match stats keys: {len(final_stats)} metrics recorded")
-        print(f"🔍 Environment integration recorded: {final_stats.get('environment_integrated', False)}")
-        print(f"🎮 Modular behavior active: {final_stats.get('modular_behavior_active', False)}")
+        reward = random.uniform(-1, 3)
+        agent.learn(reward, test_state)
+
+        if i % 5 == 0:
+            print(f"Enhanced Step {i + 1}: Action={action}, Reward={reward:.2f}")
+            if agent.neural_symbolic_decisions:
+                last_decision = agent.neural_symbolic_decisions[-1]
+                decision_type = last_decision.get('decision_info', {}).get('decision_type', 'unknown')
+                print(f"   Decision type: {decision_type}")
+
+    # End enhanced match and get comprehensive analysis
+    enhanced_stats = agent.end_match("Agent Byte", {"agent": 15, "opponent": 12}, {"total_actions": 100})
+
+    # Get enhanced transfer readiness report
+    enhanced_readiness_report = agent.get_enhanced_transfer_readiness_report()
+
+    print(f"\n📊 Enhanced Transfer Readiness Report:")
+    print(f"   Architecture: {enhanced_readiness_report.get('architecture_version')}")
+    print(f"   Transfer Readiness Score: {enhanced_readiness_report.get('transfer_readiness_score', 0):.2f}")
+    print(
+        f"   Pattern Stability: {enhanced_readiness_report.get('pattern_analysis', {}).get('pattern_stability_score', 0):.2f}")
+    print(
+        f"   Neural-Symbolic Coherence: {enhanced_readiness_report.get('decision_analysis', {}).get('neural_symbolic_coherence', 0):.2f}")
+    print(f"   Transferable Skills: {enhanced_readiness_report.get('transferable_skills_learned', 0)}")
+    print(f"   Recommended Environments: {enhanced_readiness_report.get('recommended_next_environments', [])}")
+
+    # Get enhanced stats
+    enhanced_stats = agent.get_stats()
+    print(f"\n📈 Enhanced Agent Stats:")
+    print(f"   Neural-Symbolic Integration: {enhanced_stats.get('neural_symbolic_integration')}")
+    print(f"   Pattern Recognition Ability: {enhanced_stats.get('pattern_recognition_ability', 0):.2f}")
+    print(f"   Cross-Environment Ready: {enhanced_stats.get('cross_environment_ready')}")
+
+    # Test enhanced saving
+    save_success = agent._save_enhanced_all_progress()
+    print(f"\n💾 Enhanced Save Test: {'✅ Success' if save_success else '❌ Failed'}")
+
+    print(f"\n✅ Enhanced Agent Byte v2.1 with Neural-Symbolic Integration test complete!")
+    print(f"🧠🧩 Neural and symbolic brains working together for true intelligence!")
+    print(f"🔗 Pattern tracking enables deep understanding of learning process!")
+    print(f"🌍 Ready for universal transfer learning with enhanced coherence!")
+    print(f"Neural-symbolic integration: Active")

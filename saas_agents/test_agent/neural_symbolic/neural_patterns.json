@@ -1,0 +1,98 @@
+{
+  "agent_id": "test_agent",
+  "environment_id": "pong",
+  "saved_at": "2025-07-03T06:49:16.603357",
+  "architecture_version": "Agent Byte v2.1 - Neural-Symbolic Integration",
+  "pattern_evolution_history": [
+    {
+      "timestamp": 1751543356.5117128,
+      "pattern_stability": 0.0,
+      "feature_summary": {
+        "mean": 0.08471532422224734,
+        "std": 0.12428221136456889,
+        "sparsity": 0.0,
+        "max_activation": 0.48202339320731646,
+        "min_activation": -0.006493773969768305
+      },
+      "reward_correlations": {
+        "1": 0.5,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.0
+    },
+    {
+      "timestamp": 1751543356.512432,
+      "pattern_stability": 0.0,
+      "feature_summary": {
+        "mean": 0.09805363551597843,
+        "std": 0.1533208524939197,
+        "sparsity": 0.0,
+        "max_activation": 0.7065755842718837,
+        "min_activation": -0.006676987085156065
+      },
+      "reward_correlations": {
+        "1": 0.25,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.0
+    },
+    {
+      "timestamp": 1751543356.5132709,
+      "pattern_stability": 0.8948635293027356,
+      "feature_summary": {
+        "mean": 0.10856173116545367,
+        "std": 0.17576101806192945,
+        "sparsity": 0.0,
+        "max_activation": 0.8359736674145283,
+        "min_activation": -0.0065823355812554265
+      },
+      "reward_correlations": {
+        "1": 0.25,
+        "0": 0.0,
+        "2": 0.0
+      },
+      "transfer_readiness": 0.8948635293027356
+    },
+    {
+      "timestamp": 1751543356.5140507,
+      "pattern_stability": 0.9199875387528831,
+      "feature_summary": {
+        "mean": 0.0910826609726358,
+        "std": 0.1496510081860868,
+        "sparsity": 0.0,
+        "max_activation": 0.7168496600729787,
+        "min_activation": -0.005272777024437368
+      },
+      "reward_correlations": {
+        "1": 0.16666666666666666,
+        "0": 0.0,
+        "2": 0.0
+      },
+      "transfer_readiness": 0.9199875387528831
+    },
+    {
+      "timestamp": 1751543356.5148158,
+      "pattern_stability": 0.8840146122481034,
+      "feature_summary": {
+        "mean": 0.07963105827713612,
+        "std": 0.11746229284255612,
+        "sparsity": 0.0,
+        "max_activation": 0.5569847206404361,
+        "min_activation": -0.0048883585966525865
+      },
+      "reward_correlations": {
+        "1": 0.16666666666666666,
+        "0": 0.0,
+        "2": 0.0
+      },
+      "transfer_readiness": 0.8840146122481034
+    }
+  ],
+  "transferable_insights": [],
+  "pattern_statistics": {
+    "total_patterns_tracked": 5,
+    "average_stability": 0.5397731360607445,
+    "stability_improvement": 0.0,
+    "transfer_readiness": 0.6195293282340824
+  }
+}

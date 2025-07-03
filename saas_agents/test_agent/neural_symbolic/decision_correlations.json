@@ -1,0 +1,13 @@
+{
+  "agent_id": "test_agent",
+  "environment_id": "pong",
+  "saved_at": "2025-07-03T06:49:16.603626",
+  "neural_symbolic_decisions": [],
+  "correlation_statistics": {
+    "total_decisions": 0,
+    "neural_decisions": 0,
+    "symbolic_decisions": 0,
+    "average_coherence": 0.0,
+    "integration_effectiveness": 0.0
+  }
+}

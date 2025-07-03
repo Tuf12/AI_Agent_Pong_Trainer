@@ -1,0 +1,1724 @@
+{
+  "agent_id": "1cc84261-2bee-4759-b2fd-b8e3fa3a10af",
+  "environment_id": "pong",
+  "saved_at": "2025-07-02T08:09:54.950341",
+  "architecture_version": "Agent Byte v2.1 - Neural-Symbolic Integration",
+  "pattern_evolution_history": [
+    {
+      "timestamp": 1751461785.410245,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.329737289319977,
+        "std": 0.48092739105206944,
+        "sparsity": 0.0,
+        "max_activation": 2.0094666318550267,
+        "min_activation": -0.023845294403979367
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461785.4482348,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.32969201176793816,
+        "std": 0.4808046251729892,
+        "sparsity": 0.0,
+        "max_activation": 2.0067118232799226,
+        "min_activation": -0.023898098064758733
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461785.486321,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.3296319338073297,
+        "std": 0.48045745921272476,
+        "sparsity": 0.0,
+        "max_activation": 1.9955938770100725,
+        "min_activation": -0.023990527948476118
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461785.52461,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.32960592757753693,
+        "std": 0.48057475956070783,
+        "sparsity": 0.0,
+        "max_activation": 2.001197279008188,
+        "min_activation": -0.024004204464569873
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461785.562768,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.09930677853968084,
+        "std": 0.15405947949812238,
+        "sparsity": 0.0,
+        "max_activation": 0.6671311494314012,
+        "min_activation": -0.005563614865885578
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461785.6006818,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.33386860793247675,
+        "std": 0.4859647430812504,
+        "sparsity": 0.0,
+        "max_activation": 2.0928247188887807,
+        "min_activation": -0.023529350125296063
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461785.638702,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.33352131056116086,
+        "std": 0.4856187460594454,
+        "sparsity": 0.0,
+        "max_activation": 2.088660098635198,
+        "min_activation": -0.02350226267959508
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461785.6767015,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.33293544948801745,
+        "std": 0.48566913520518434,
+        "sparsity": 0.0,
+        "max_activation": 2.09630134293853,
+        "min_activation": -0.023422229227265254
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461785.7147858,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.3325974418048619,
+        "std": 0.4853361575715582,
+        "sparsity": 0.0,
+        "max_activation": 2.092042551549039,
+        "min_activation": -0.02339541520888073
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461785.75295,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.33204448898293304,
+        "std": 0.48531365988073455,
+        "sparsity": 0.0,
+        "max_activation": 2.097938752219176,
+        "min_activation": -0.02336481440831855
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461785.7912784,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.3317068584253248,
+        "std": 0.48495739346098,
+        "sparsity": 0.0,
+        "max_activation": 2.0933257789849145,
+        "min_activation": -0.02335233439290778
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461785.829453,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.3311590691307818,
+        "std": 0.4847646785646591,
+        "sparsity": 0.0,
+        "max_activation": 2.0973951022883277,
+        "min_activation": -0.02336928281456073
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461785.8673534,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.330817476261521,
+        "std": 0.4844094409189381,
+        "sparsity": 0.0,
+        "max_activation": 2.0927357534234243,
+        "min_activation": -0.02335770952019644
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461785.90552,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.330486958903445,
+        "std": 0.4840683575295939,
+        "sparsity": 0.0,
+        "max_activation": 2.0881248777424513,
+        "min_activation": -0.02334657966095459
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461785.9434512,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.33018070746840644,
+        "std": 0.4837621990204111,
+        "sparsity": 0.0,
+        "max_activation": 2.083647936568581,
+        "min_activation": -0.0233366749908368
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461785.9802635,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.32991144546879797,
+        "std": 0.48343553945174705,
+        "sparsity": 0.0,
+        "max_activation": 2.079170992078618,
+        "min_activation": -0.023326770326657368
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461786.0151134,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.3296586063794991,
+        "std": 0.48312121599785174,
+        "sparsity": 0.0,
+        "max_activation": 2.0749128215001766,
+        "min_activation": -0.023313629363619404
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461786.0496876,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.32941342696695786,
+        "std": 0.48281624780428767,
+        "sparsity": 0.0,
+        "max_activation": 2.0707669404401763,
+        "min_activation": -0.023298200198582895
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461786.0842383,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.3291683184785966,
+        "std": 0.48252744641786244,
+        "sparsity": 0.0,
+        "max_activation": 2.066966716545024,
+        "min_activation": -0.02328098356929981
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461786.1192446,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.3289650391704634,
+        "std": 0.48228322982580074,
+        "sparsity": 0.0,
+        "max_activation": 2.0637199399450097,
+        "min_activation": -0.023267084470325765
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461786.1540115,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.3288158926185104,
+        "std": 0.48188653005790233,
+        "sparsity": 0.0,
+        "max_activation": 2.050799023957459,
+        "min_activation": -0.023276713437385296
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461786.1885,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.3285986131556158,
+        "std": 0.4816515178820029,
+        "sparsity": 0.0,
+        "max_activation": 2.0475280718892406,
+        "min_activation": -0.023331280669557277
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461786.2229228,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.3284864325928162,
+        "std": 0.4811780438501747,
+        "sparsity": 0.0,
+        "max_activation": 2.0335893429772502,
+        "min_activation": -0.023425604827876128
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461786.258072,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.3283100261348078,
+        "std": 0.48096427705264,
+        "sparsity": 0.0,
+        "max_activation": 2.0298015437717027,
+        "min_activation": -0.02347674343920592
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461786.295744,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.3282412995702745,
+        "std": 0.4805463594162404,
+        "sparsity": 0.0,
+        "max_activation": 2.014946320520113,
+        "min_activation": -0.023561594612436485
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461786.3335438,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.32795721244931625,
+        "std": 0.4805483240772951,
+        "sparsity": 0.0,
+        "max_activation": 2.0222259461902365,
+        "min_activation": -0.02357902078249729
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461786.3724487,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.32772959028737214,
+        "std": 0.48052794565118917,
+        "sparsity": 0.0,
+        "max_activation": 2.0282607279619578,
+        "min_activation": -0.023594015645460355
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461786.4103377,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.3276037842789467,
+        "std": 0.48004203506964704,
+        "sparsity": 0.0,
+        "max_activation": 2.013164019052751,
+        "min_activation": -0.023687565767380923
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461786.448225,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.32740638060826843,
+        "std": 0.4800099265323158,
+        "sparsity": 0.0,
+        "max_activation": 2.0191748500689526,
+        "min_activation": -0.023702509331362604
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461786.4862952,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.32724708741566383,
+        "std": 0.47974080381405804,
+        "sparsity": 0.0,
+        "max_activation": 2.014515105562989,
+        "min_activation": -0.02375682940669477
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461786.524544,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.32711640449179324,
+        "std": 0.47967986649363176,
+        "sparsity": 0.0,
+        "max_activation": 2.0203807239009266,
+        "min_activation": -0.02377430581780474
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461786.5624676,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.326955732291987,
+        "std": 0.47942689717198644,
+        "sparsity": 0.0,
+        "max_activation": 2.0158341039311054,
+        "min_activation": -0.023828137374113635
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461786.6004338,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.3267972784996749,
+        "std": 0.4791809040322233,
+        "sparsity": 0.0,
+        "max_activation": 2.0113311939685152,
+        "min_activation": -0.023881915406281165
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461786.63735,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.32669922898785086,
+        "std": 0.47903180068662227,
+        "sparsity": 0.0,
+        "max_activation": 2.008235553134279,
+        "min_activation": -0.023926933933515526
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461786.6721454,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.32662480489806023,
+        "std": 0.47872963513142186,
+        "sparsity": 0.0,
+        "max_activation": 1.9951420867394163,
+        "min_activation": -0.024018908071303864
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461786.7066612,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.31194987634223925,
+        "std": 0.4394568987634947,
+        "sparsity": 0.0,
+        "max_activation": 1.6698691042178515,
+        "min_activation": -0.02079654596655874
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461786.7411597,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.31280745240554897,
+        "std": 0.4407809627876785,
+        "sparsity": 0.0,
+        "max_activation": 1.6839080620558875,
+        "min_activation": -0.020977165666663487
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461786.775701,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.31369118915605815,
+        "std": 0.4421372272073913,
+        "sparsity": 0.0,
+        "max_activation": 1.698197453086916,
+        "min_activation": -0.021155544447656844
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461786.810219,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.3138043046362253,
+        "std": 0.44246975814390666,
+        "sparsity": 0.0,
+        "max_activation": 1.7023663195373677,
+        "min_activation": -0.02119366499645094
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461786.8449214,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.31391220780433593,
+        "std": 0.44280263889285165,
+        "sparsity": 0.0,
+        "max_activation": 1.7066170657601312,
+        "min_activation": -0.02123021331174169
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461786.8794212,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.3140189259555879,
+        "std": 0.4431412233600106,
+        "sparsity": 0.0,
+        "max_activation": 1.7108864486329936,
+        "min_activation": -0.021266404161697002
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461786.9139512,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.31412553725411285,
+        "std": 0.4434871001456251,
+        "sparsity": 0.0,
+        "max_activation": 1.7151566935543114,
+        "min_activation": -0.021302579466766686
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461786.9490798,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.31424784262559047,
+        "std": 0.44383100332488096,
+        "sparsity": 0.0,
+        "max_activation": 1.719478410630067,
+        "min_activation": -0.02133779991605027
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461786.9872167,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.31355124591758987,
+        "std": 0.4431488629999561,
+        "sparsity": 0.0,
+        "max_activation": 1.7140003961970032,
+        "min_activation": -0.02122935364142483
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461787.0252728,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.31288468695414007,
+        "std": 0.44248865218551586,
+        "sparsity": 0.0,
+        "max_activation": 1.707698131644784,
+        "min_activation": -0.021108895571148752
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461787.0634465,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.3137864010262521,
+        "std": 0.44390855796897466,
+        "sparsity": 0.0,
+        "max_activation": 1.7225537799817048,
+        "min_activation": -0.021292138411356982
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461787.1017263,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.3130696378051184,
+        "std": 0.44320429431809966,
+        "sparsity": 0.0,
+        "max_activation": 1.7162514219753633,
+        "min_activation": -0.021179880785473663
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461787.1385293,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.3123492623586417,
+        "std": 0.44235449195056825,
+        "sparsity": 0.0,
+        "max_activation": 1.710621090983456,
+        "min_activation": -0.02107752574548673
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461787.1731184,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.31326179575018975,
+        "std": 0.4438670865473498,
+        "sparsity": 0.0,
+        "max_activation": 1.7256036075577748,
+        "min_activation": -0.021249036602133044
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461787.2076585,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.31434104361621173,
+        "std": 0.44537601230777474,
+        "sparsity": 0.0,
+        "max_activation": 1.7421910389513742,
+        "min_activation": -0.02141963476542869
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461787.2422152,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.31349014979410267,
+        "std": 0.44459907743711596,
+        "sparsity": 0.0,
+        "max_activation": 1.7358845611810634,
+        "min_activation": -0.021325367468874555
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461787.276754,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.3146354798782296,
+        "std": 0.44614720647903877,
+        "sparsity": 0.0,
+        "max_activation": 1.7526493654351891,
+        "min_activation": -0.021494516496423307
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461787.3113139,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.31581012922979446,
+        "std": 0.4476667314920454,
+        "sparsity": 0.0,
+        "max_activation": 1.7702067317470978,
+        "min_activation": -0.021633171017163173
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461787.345781,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.3159889827511275,
+        "std": 0.4480924399081444,
+        "sparsity": 0.0,
+        "max_activation": 1.7753216534980343,
+        "min_activation": -0.02165849369440196
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461787.3808453,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.3161674114698194,
+        "std": 0.448524142126095,
+        "sparsity": 0.0,
+        "max_activation": 1.7804177488009085,
+        "min_activation": -0.02168390868337273
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461787.4185236,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.3153275300124747,
+        "std": 0.44768741051158145,
+        "sparsity": 0.0,
+        "max_activation": 1.773426363460169,
+        "min_activation": -0.0216192789326955
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461787.4568157,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.31653736480936745,
+        "std": 0.4492492805925875,
+        "sparsity": 0.0,
+        "max_activation": 1.7904639250671956,
+        "min_activation": -0.021749156948824414
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461787.4979146,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.3167498915748553,
+        "std": 0.44962642019846627,
+        "sparsity": 0.0,
+        "max_activation": 1.795619062238213,
+        "min_activation": -0.021784322475946
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461787.535184,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.3169775278115212,
+        "std": 0.45001787297248097,
+        "sparsity": 0.0,
+        "max_activation": 1.8007708441891674,
+        "min_activation": -0.021819850366228962
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461787.573373,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.3171979023166186,
+        "std": 0.4504075070260977,
+        "sparsity": 0.0,
+        "max_activation": 1.8059195095272178,
+        "min_activation": -0.021852075988847974
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461787.6114995,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.31740947556112725,
+        "std": 0.4507959946951789,
+        "sparsity": 0.0,
+        "max_activation": 1.8109250461975073,
+        "min_activation": -0.021883873228654566
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461787.6496205,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.3165828089982047,
+        "std": 0.44994973008256467,
+        "sparsity": 0.0,
+        "max_activation": 1.803507005523063,
+        "min_activation": -0.021811130407557614
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461787.6878357,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.3178661045326274,
+        "std": 0.45161083631504295,
+        "sparsity": 0.0,
+        "max_activation": 1.8208310679888215,
+        "min_activation": -0.021945058142318178
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461787.725777,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.3180986921411084,
+        "std": 0.45203190890651884,
+        "sparsity": 0.0,
+        "max_activation": 1.8257818992908856,
+        "min_activation": -0.021973950932981254
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461787.7627108,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.31832808930606277,
+        "std": 0.4524668289057136,
+        "sparsity": 0.0,
+        "max_activation": 1.8308091839214842,
+        "min_activation": -0.022003013838609302
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461787.7974212,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.31855748611958246,
+        "std": 0.45291033130308056,
+        "sparsity": 0.0,
+        "max_activation": 1.8358364599421808,
+        "min_activation": -0.022032076725836364
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461787.8319476,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.11810795466586237,
+        "std": 0.18929910658197768,
+        "sparsity": 0.0,
+        "max_activation": 0.9935571264261314,
+        "min_activation": -0.006916998273391709
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461787.8665159,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.33109506239891273,
+        "std": 0.4852734404686225,
+        "sparsity": 0.0,
+        "max_activation": 2.1680157230136294,
+        "min_activation": -0.023940153923170754
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461787.9010696,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.33108321189596845,
+        "std": 0.48610752675635993,
+        "sparsity": 0.0,
+        "max_activation": 2.172041507993475,
+        "min_activation": -0.023888729472961733
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461787.9356658,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.3311309684151558,
+        "std": 0.48694150524340424,
+        "sparsity": 0.0,
+        "max_activation": 2.1761090367240685,
+        "min_activation": -0.02383182533528352
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461787.9701674,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.33129038822369783,
+        "std": 0.48747362587169957,
+        "sparsity": 0.0,
+        "max_activation": 2.1792541345776386,
+        "min_activation": -0.023825604133492773
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461788.0079424,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.33147209102051545,
+        "std": 0.48800246686034754,
+        "sparsity": 0.0,
+        "max_activation": 2.1822213922137914,
+        "min_activation": -0.02382291845490476
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461788.0460124,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.3316640174077823,
+        "std": 0.4885419612276527,
+        "sparsity": 0.0,
+        "max_activation": 2.1850733434961738,
+        "min_activation": -0.023822342389683247
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461788.084019,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.33185540403030733,
+        "std": 0.48909057860566446,
+        "sparsity": 0.0,
+        "max_activation": 2.187806959747635,
+        "min_activation": -0.023821498960129917
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461788.1275277,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.33209090857240975,
+        "std": 0.48961832980888464,
+        "sparsity": 0.0,
+        "max_activation": 2.1903833925656193,
+        "min_activation": -0.023817862478461658
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461788.1628141,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.3323411574353608,
+        "std": 0.4898337591702817,
+        "sparsity": 0.0,
+        "max_activation": 2.190719915577307,
+        "min_activation": -0.023852055196344372
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461788.1979442,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.3325787790325916,
+        "std": 0.4907155574687042,
+        "sparsity": 0.0,
+        "max_activation": 2.1956514441329715,
+        "min_activation": -0.023813262211396503
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461788.2332902,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.3328544650761834,
+        "std": 0.49126544309168024,
+        "sparsity": 0.0,
+        "max_activation": 2.1981018742052645,
+        "min_activation": -0.02381054934343293
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461788.267883,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.3331148951239852,
+        "std": 0.4918094051758092,
+        "sparsity": 0.0,
+        "max_activation": 2.200530768839284,
+        "min_activation": -0.023803226588483613
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461788.3026307,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.3333753245301543,
+        "std": 0.49235938297251913,
+        "sparsity": 0.0,
+        "max_activation": 2.2029596529049824,
+        "min_activation": -0.02379590385979029
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461788.3371649,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.33363575457795613,
+        "std": 0.4929153577576413,
+        "sparsity": 0.0,
+        "max_activation": 2.205388547539003,
+        "min_activation": -0.023788581104840976
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461788.372152,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.33386603941224835,
+        "std": 0.493450042599713,
+        "sparsity": 0.0,
+        "max_activation": 2.2072873062988214,
+        "min_activation": -0.02378281647475811
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461788.4066956,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.3340966530351713,
+        "std": 0.49397381984710864,
+        "sparsity": 0.0,
+        "max_activation": 2.20900375251458,
+        "min_activation": -0.023777587688558647
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461788.4444125,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.33435523582686694,
+        "std": 0.4944812467970951,
+        "sparsity": 0.0,
+        "max_activation": 2.2106688527010685,
+        "min_activation": -0.023772601143153355
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461788.4823363,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.33461731037605547,
+        "std": 0.49498416626208025,
+        "sparsity": 0.0,
+        "max_activation": 2.2122052389526226,
+        "min_activation": -0.02376822192224778
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461788.5206926,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.33485059458212973,
+        "std": 0.49543964556774184,
+        "sparsity": 0.0,
+        "max_activation": 2.213362960582231,
+        "min_activation": -0.02376278961094194
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461788.558617,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.33509023070127075,
+        "std": 0.49586717761055427,
+        "sparsity": 0.0,
+        "max_activation": 2.2139275793462163,
+        "min_activation": -0.02375227095544745
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461788.596525,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.3353271368056013,
+        "std": 0.4962891545062688,
+        "sparsity": 0.0,
+        "max_activation": 2.2145211041594552,
+        "min_activation": -0.023741388901657116
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461788.634577,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.33567169372045197,
+        "std": 0.4962342003376219,
+        "sparsity": 0.0,
+        "max_activation": 2.213974450699777,
+        "min_activation": -0.023773479547073754
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461788.6698997,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.33580477256720576,
+        "std": 0.49715260464345973,
+        "sparsity": 0.0,
+        "max_activation": 2.2157506543357055,
+        "min_activation": -0.023717044999126195
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461788.704501,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.3360400460587846,
+        "std": 0.49759670197673933,
+        "sparsity": 0.0,
+        "max_activation": 2.2164146438657255,
+        "min_activation": -0.023708977748482428
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461788.7391086,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.33627531859956816,
+        "std": 0.4980467002501332,
+        "sparsity": 0.0,
+        "max_activation": 2.2170786189432063,
+        "min_activation": -0.02372529181738625
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461788.773626,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.336508891583456,
+        "std": 0.49850404086120553,
+        "sparsity": 0.0,
+        "max_activation": 2.217984340551907,
+        "min_activation": -0.023739122353817903
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461788.8081985,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.3367404665106517,
+        "std": 0.49896879910877345,
+        "sparsity": 0.0,
+        "max_activation": 2.2191741848892037,
+        "min_activation": -0.023750033628646996
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461788.842711,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.33699242606875784,
+        "std": 0.4994254817838417,
+        "sparsity": 0.0,
+        "max_activation": 2.2203640190818135,
+        "min_activation": -0.023760944889440354
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461788.8773189,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.33729883400708893,
+        "std": 0.499887176687836,
+        "sparsity": 0.0,
+        "max_activation": 2.221349747353758,
+        "min_activation": -0.02377206109763111
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461788.911868,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.33774619061346633,
+        "std": 0.4997579112261516,
+        "sparsity": 0.0,
+        "max_activation": 2.2189256539734368,
+        "min_activation": -0.02382188964277132
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461788.9472132,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.33803680786475654,
+        "std": 0.5002239746520738,
+        "sparsity": 0.0,
+        "max_activation": 2.2201144890912614,
+        "min_activation": -0.023835865389610484
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461788.9849238,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.33850789718418806,
+        "std": 0.5002161083362309,
+        "sparsity": 0.0,
+        "max_activation": 2.2191530825069683,
+        "min_activation": -0.023884719336556413
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    },
+    {
+      "timestamp": 1751461789.0231087,
+      "pattern_stability": 0.968034719142931,
+      "feature_summary": {
+        "mean": 0.3388268149087902,
+        "std": 0.500682985505824,
+        "sparsity": 0.0,
+        "max_activation": 2.220193632336303,
+        "min_activation": -0.02389478548832691
+      },
+      "reward_correlations": {
+        "1": 0.0,
+        "2": 0.0,
+        "0": 0.0
+      },
+      "transfer_readiness": 0.968034719142931
+    }
+  ],
+  "transferable_insights": [
+    {
+      "type": "failure_pattern_with_instability",
+      "reward": -10.5,
+      "pattern_stability": 0.968034719142931,
+      "environment": "pong",
+      "timestamp": 1751461789.023129,
+      "transferable_principle": "Unstable patterns lead to poor performance"
+    }
+  ],
+  "pattern_statistics": {
+    "total_patterns_tracked": 1790,
+    "average_stability": 0.9672319192690491,
+    "stability_improvement": 0.001605599747764197,
+    "transfer_readiness": 0.9776243034000516
+  }
+}

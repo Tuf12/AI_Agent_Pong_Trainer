@@ -1,0 +1,168 @@
+{
+  "environment_id": "arena_pong",
+  "display_name": "Arena Pong",
+  "environment_type": "competitive_game",
+  "version": "1.0",
+  "created_at": "2025-07-02",
+  
+  "objective": {
+    "primary": "Learn to play Pong effectively and compete with other AI agents to achieve the highest win rate",
+    "secondary": [
+      "Master ball trajectory prediction and interception",
+      "Develop strategic positioning skills",
+      "Learn adaptive gameplay against different opponents",
+      "Optimize reaction timing for competitive play"
+    ],
+    "victory_conditions": [
+      "Score 21 points before your opponent",
+      "Maintain consistent ball contact and control",
+      "Demonstrate strategic paddle positioning"
+    ],
+    "failure_conditions": [
+      "Allow opponent to score 21 points first",
+      "Miss too many ball interceptions",
+      "Show poor positioning and reaction timing"
+    ]
+  },
+  
+  "rules": {
+    "core_mechanics": [
+      "Control your paddle (right side) using UP, STAY, or DOWN actions",
+      "Ball bounces off top and bottom walls",
+      "Ball bounces off paddles with angle based on hit position",
+      "Score points when ball reaches opponent's side",
+      "First to 21 points wins the match"
+    ],
+    "constraints": [
+      "Paddle must stay within screen boundaries",
+      "Cannot directly control ball movement",
+      "Actions are limited to UP (0), STAY (1), DOWN (2)",
+      "Real-time gameplay with 30 FPS updates"
+    ],
+    "scoring": [
+      "Score +1 point when ball reaches left side (opponent misses)",
+      "Lose -1 point when ball reaches right side (you miss)",
+      "Game ends when either player reaches 21 points"
+    ],
+    "special_conditions": [
+      "Ball speed may increase during rallies",
+      "Paddle hit position affects ball angle and spin",
+      "Center paddle hits create straight returns",
+      "Edge hits create angled shots"
+    ]
+  },
+  
+  "strategic_concepts": {
+    "core_skills": [
+      "Ball trajectory prediction",
+      "Timing and positioning optimization",
+      "Paddle control precision",
+      "Opponent behavior analysis",
+      "Strategic shot placement",
+      "Defensive positioning"
+    ],
+    "tactical_approaches": [
+      "Aggressive play - move paddle to intercept ball early",
+      "Defensive play - focus on consistent ball returns",
+      "Adaptive play - adjust strategy based on opponent",
+      "Predictive play - anticipate ball destination",
+      "Counter-attack - use opponent's shots against them"
+    ],
+    "success_patterns": [
+      "Consistent ball contact leads to longer rallies",
+      "Center paddle positioning provides better coverage",
+      "Predictive movement is more effective than reactive",
+      "Edge hits can create winning angles",
+      "Patience often beats aggressive rushing"
+    ],
+    "failure_patterns": [
+      "Over-correction leads to missed balls",
+      "Staying too stationary reduces coverage",
+      "Rushing to extremes wastes paddle position",
+      "Ignoring ball trajectory patterns",
+      "Poor timing on paddle movements"
+    ],
+    "recommended_focus": [
+      "Start with basic ball tracking and interception",
+      "Practice consistent paddle positioning",
+      "Learn to predict ball bounces off walls",
+      "Develop timing for different ball speeds",
+      "Master edge hit techniques for strategic shots"
+    ]
+  },
+  
+  "transferable_skills": [
+    "Trajectory prediction and interception",
+    "Real-time decision making under pressure",
+    "Spatial awareness and positioning",
+    "Timing optimization",
+    "Pattern recognition and adaptation",
+    "Strategic thinking and planning"
+  ],
+  
+  "learning_recommendations": {
+    "beginner_focus": [
+      "Learn basic paddle control (UP, STAY, DOWN)",
+      "Practice tracking ball movement",
+      "Understand scoring system",
+      "Master staying within screen bounds"
+    ],
+    "intermediate_focus": [
+      "Develop ball trajectory prediction",
+      "Practice strategic positioning",
+      "Learn to use paddle hit positions",
+      "Study opponent movement patterns"
+    ],
+    "advanced_focus": [
+      "Master angle shots using paddle edges",
+      "Develop adaptive strategies against different opponents",
+      "Optimize reaction timing for competitive play",
+      "Create and execute strategic shot placement"
+    ],
+    "expert_focus": [
+      "Perfect predictive movement algorithms",
+      "Develop meta-strategies against common AI patterns",
+      "Master psychological gameplay elements",
+      "Optimize for tournament-level competition"
+    ]
+  },
+  
+  "game_mechanics": {
+    "screen_dimensions": {
+      "width": 800,
+      "height": 400,
+      "coordinate_system": "Center-zero (Y=0 at center)"
+    },
+    "paddle_specs": {
+      "height": 80,
+      "width": 10,
+      "speed": 12,
+      "position": "Right side for AI agent"
+    },
+    "ball_specs": {
+      "size": 10,
+      "initial_speed": 12,
+      "speed_variation": "May increase during play"
+    },
+    "physics": {
+      "wall_bounces": "Top and bottom walls reverse Y velocity",
+      "paddle_bounces": "Angle based on hit position relative to paddle center",
+      "spin_effects": "Paddle edge hits add directional spin"
+    }
+  },
+  
+  "competitive_elements": {
+    "tournament_format": "First to 21 points wins",
+    "ranking_system": "Based on win rate and performance metrics",
+    "matchmaking": "Agents paired with similar skill levels",
+    "spectator_mode": "Matches can be watched by other users",
+    "leaderboards": "Track top performing agents across all users"
+  },
+  
+  "training_philosophy": {
+    "core_principle": "Learn through experience and adaptation",
+    "approach": "Incremental skill development with strategic depth",
+    "goal": "Develop autonomous, competitive, and adaptive AI agents",
+    "evaluation": "Success measured by win rate, consistency, and strategic sophistication"
+  }
+}

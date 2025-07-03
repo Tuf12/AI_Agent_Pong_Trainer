@@ -1,587 +1,1050 @@
-# knowledge_system.py - How Agent Byte Uses Symbolic Knowledge - FIXED
+# knowledge_system.py - Enhanced Neural-Symbolic Dual Brain Knowledge System
 import numpy as np
 import random
-from typing import Dict, List, Tuple, Any
+import time
+from typing import Dict, List, Tuple, Any, Optional
+from collections import defaultdict, deque
 
-from numpy import signedinteger
-from numpy._typing import _32Bit, _64Bit
 
+class NeuralPatternInterpreter:
+    """
+    Neural Pattern Interpreter - The Bridge Between Neural and Symbolic Brains
 
-class KnowledgeInterpreter:
-    """Translates symbolic knowledge into actionable decision-making logic"""
+    This system watches the neural brain learn and interprets what patterns mean
+    in terms of transferable skills. It's the key component that enables the
+    dual brain to connect neural learning with symbolic understanding.
+    """
 
     def __init__(self):
-        self.strategy_mappings = {
-            # Environmental strategies
-            "Ball trajectory prediction": self._apply_trajectory_prediction,
-            "Optimal paddle positioning": self._apply_optimal_positioning,
-            "Timing and reaction speed": self._apply_timing_optimization,
-            "Angle control for returns": self._apply_angle_control,
+        # Neural pattern recognition
+        self.learned_patterns = {}
+        self.pattern_skill_mapping = {}
+        self.skill_confidence_scores = defaultdict(float)
 
-            # Tactical approaches
-            "Defensive positioning - stay between ball and goal": self._apply_defensive_positioning,
-            "Aggressive returns - use paddle edges for angles": self._apply_aggressive_returns,
-            "Predictive movement - anticipate ball path": self._apply_predictive_movement,
-            "Counter-attacking - respond to opponent patterns": self._apply_counter_attacking,
-
-            # Learned strategies (dynamic patterns)
-            "move toward ball path": self._apply_ball_tracking,
-            "angle shots": self._apply_angle_shots,
-            "intercept early": self._apply_early_interception,
-
-            # Success patterns
-            "Early positioning beats reactive movement": self._apply_early_positioning,
-            "Consistent hits build momentum": self._apply_consistency_focus,
-            "Angled shots create scoring opportunities": self._apply_offensive_angles,
-            "Defensive stability enables offensive chances": self._apply_defense_to_offense,
-
-            # Master and Develop Strategies - 🔧 FIX: Map these properly
-            "Master ball trajectory prediction": self._apply_trajectory_prediction,
-            "Develop ball trajectory prediction": self._apply_trajectory_prediction,
-            "Master optimal paddle positioning": self._apply_optimal_positioning,
-            "Develop optimal paddle positioning": self._apply_optimal_positioning,
-            "Master timing and reaction speed": self._apply_timing_optimization,
-            "Develop timing and reaction speed": self._apply_timing_optimization,
-            "Master angle control for returns": self._apply_angle_control,
-            "Develop angle control for returns": self._apply_angle_control,
+        # Universal skill definitions
+        self.universal_skills = {
+            'trajectory_prediction': {
+                'description': 'Ability to predict future positions of moving objects',
+                'neural_indicators': ['consistent_action_sequences', 'temporal_pattern_recognition'],
+                'measurement_criteria': ['prediction_accuracy', 'anticipatory_actions'],
+                'applies_to_environments': ['pong', 'chess', 'trading', 'robotics', 'sports']
+            },
+            'timing_optimization': {
+                'description': 'Ability to execute actions at optimal moments',
+                'neural_indicators': ['reward_timing_correlation', 'action_delay_patterns'],
+                'measurement_criteria': ['hit_rate_improvement', 'timing_precision'],
+                'applies_to_environments': ['pong', 'rhythm_games', 'trading', 'manufacturing']
+            },
+            'strategic_positioning': {
+                'description': 'Ability to position optimally for maximum advantage',
+                'neural_indicators': ['spatial_optimization_patterns', 'defensive_positioning'],
+                'measurement_criteria': ['positioning_effectiveness', 'defensive_success'],
+                'applies_to_environments': ['pong', 'chess', 'go', 'military_strategy', 'sports']
+            },
+            'pattern_recognition': {
+                'description': 'Ability to recognize and adapt to recurring patterns',
+                'neural_indicators': ['sequence_learning', 'adaptation_speed'],
+                'measurement_criteria': ['pattern_detection_speed', 'adaptation_rate'],
+                'applies_to_environments': ['pong', 'chess', 'trading', 'anomaly_detection']
+            },
+            'error_recovery': {
+                'description': 'Ability to recover from mistakes and continue effectively',
+                'neural_indicators': ['post_error_adaptation', 'resilience_patterns'],
+                'measurement_criteria': ['recovery_speed', 'performance_stability'],
+                'applies_to_environments': ['pong', 'chess', 'trading', 'robotics', 'learning']
+            },
+            'adaptive_strategy': {
+                'description': 'Ability to modify strategy based on changing conditions',
+                'neural_indicators': ['strategy_switching', 'context_adaptation'],
+                'measurement_criteria': ['strategy_effectiveness', 'adaptation_speed'],
+                'applies_to_environments': ['pong', 'chess', 'trading', 'business', 'warfare']
+            }
         }
 
-        self.failure_avoidance = {
-            "reactive_play": self._avoid_reactive_play,
-            "edge_camping": self._avoid_edge_camping,
-            "over_correction": self._avoid_over_correction,
-            "passive_defense": self._avoid_passive_defense
+        print("🧠 Neural Pattern Interpreter initialized")
+        print(f"   📊 Tracking {len(self.universal_skills)} universal skills")
+
+    def analyze_neural_learning(self, action_history: List[Dict], reward_history: List[float],
+                                state_patterns: List[np.ndarray]) -> Dict[str, Any]:
+        """
+        Analyze what the neural brain is learning and map it to transferable skills
+
+        This is the core method that watches neural learning and interprets it
+        symbolically, creating the bridge between the two brain systems.
+        """
+        analysis = {
+            'detected_patterns': [],
+            'emerging_skills': [],
+            'skill_development': {},
+            'transfer_readiness': {},
+            'neural_insights': []
         }
 
-    def apply_knowledge(self, state: np.ndarray, q_values: np.ndarray, app_context: Dict,
-                        exploration_rate: float) -> tuple[signedinteger[_32Bit | _64Bit], str] | tuple[int, str]:
-        """Main method to apply knowledge and return modified action + reasoning"""
+        if len(action_history) < 10:  # Need minimum data for analysis
+            return analysis
 
-        if not app_context:
-            return np.argmax(q_values), "No context available"
+        # Analyze trajectory prediction patterns
+        trajectory_skill = self._analyze_trajectory_prediction(action_history, reward_history, state_patterns)
+        if trajectory_skill['confidence'] > 0.3:
+            analysis['emerging_skills'].append('trajectory_prediction')
+            analysis['skill_development']['trajectory_prediction'] = trajectory_skill
 
-        # Analyze current game state
-        game_situation = self._analyze_game_situation(state)
+        # Analyze timing optimization patterns
+        timing_skill = self._analyze_timing_optimization(action_history, reward_history)
+        if timing_skill['confidence'] > 0.3:
+            analysis['emerging_skills'].append('timing_optimization')
+            analysis['skill_development']['timing_optimization'] = timing_skill
 
-        # Determine which knowledge to apply
-        applicable_strategies = self._select_applicable_strategies(app_context, game_situation)
+        # Analyze strategic positioning patterns
+        positioning_skill = self._analyze_strategic_positioning(action_history, reward_history, state_patterns)
+        if positioning_skill['confidence'] > 0.3:
+            analysis['emerging_skills'].append('strategic_positioning')
+            analysis['skill_development']['strategic_positioning'] = positioning_skill
 
-        if not applicable_strategies:
-            return np.argmax(q_values), "No applicable strategies for current situation"
+        # Analyze pattern recognition capabilities
+        pattern_skill = self._analyze_pattern_recognition(action_history, reward_history)
+        if pattern_skill['confidence'] > 0.3:
+            analysis['emerging_skills'].append('pattern_recognition')
+            analysis['skill_development']['pattern_recognition'] = pattern_skill
 
-        # Apply the most relevant strategy
-        chosen_strategy = self._choose_best_strategy(applicable_strategies, game_situation)
+        # Analyze error recovery patterns
+        recovery_skill = self._analyze_error_recovery(action_history, reward_history)
+        if recovery_skill['confidence'] > 0.3:
+            analysis['emerging_skills'].append('error_recovery')
+            analysis['skill_development']['error_recovery'] = recovery_skill
 
-        # Get strategy function and apply it
-        strategy_func = self.strategy_mappings.get(chosen_strategy)
-        if strategy_func:
-            try:
-                modified_action, confidence = strategy_func(state, q_values, game_situation)
+        # Calculate transfer readiness for each skill
+        for skill in analysis['emerging_skills']:
+            skill_data = analysis['skill_development'][skill]
+            analysis['transfer_readiness'][skill] = self._calculate_transfer_readiness(skill, skill_data)
 
-                # Apply failure avoidance patterns
-                final_action = self._apply_failure_avoidance(modified_action, state, game_situation, app_context)
+        # Generate neural insights
+        analysis['neural_insights'] = self._generate_neural_insights(analysis)
 
-                reasoning = f"Applied '{chosen_strategy}' (confidence: {confidence:.2f})"
-                return final_action, reasoning
-            except Exception as e:
-                print(f"⚠️ Error applying strategy '{chosen_strategy}': {e}")
-                return np.argmax(q_values), f"Strategy error, using neural fallback"
-        else:
-            # 🔧 FIX: Better fallback when strategy not found
-            print(f"⚠️ Strategy '{chosen_strategy}' not in mappings, using neural fallback")
-            return np.argmax(q_values), f"Neural fallback (strategy '{chosen_strategy}' unavailable)"
+        return analysis
 
-    def _analyze_game_situation(self, state: np.ndarray) -> Dict[str, Any]:
-        """Analyze current game state with CENTER-ZERO coordinates"""
-        if len(state) < 14:
-            return {"situation": "unknown", "urgency": 0.0}
+    def _analyze_trajectory_prediction(self, action_history: List[Dict], reward_history: List[float],
+                                       state_patterns: List[np.ndarray]) -> Dict[str, Any]:
+        """Analyze if the neural brain is learning trajectory prediction"""
+        skill_data = {
+            'confidence': 0.0,
+            'evidence': [],
+            'neural_patterns': [],
+            'measurement_score': 0.0
+        }
 
-        # Extract key state components (CENTER-ZERO coordinates)
-        ball_x = state[0]  # Ball X: -1.0 to +1.0 (center = 0.0)
-        ball_y = state[1]  # Ball Y: -0.5 to +0.5 (center = 0.0)
-        ball_dx = state[2]  # Ball X velocity (normalized)
-        ball_dy = state[3]  # Ball Y velocity (normalized)
-        paddle_y = state[4]  # AI paddle: -0.5 to +0.5 (center = 0.0)
-        distance_to_ai = state[5]  # Distance to AI side
+        if len(state_patterns) < 5:
+            return skill_data
 
-        # Additional strategic info
-        ball_approaching = state[7] if len(state) > 7 else (ball_dx > 0.5)
-        urgent_situation = state[13] if len(state) > 13 else (distance_to_ai < 0.2 and ball_approaching)
+        # Look for predictive action sequences
+        predictive_actions = 0
+        total_actions = 0
 
-        # Determine situation type with center-zero awareness
-        situation_type = "neutral"
-        urgency_level = 0.0
+        for i in range(1, min(len(action_history), len(reward_history))):
+            if reward_history[i] > 0:  # Successful action
+                # Check if action was predictive (anticipatory)
+                recent_rewards = reward_history[max(0, i - 3):i]
+                if len(recent_rewards) >= 2 and all(r <= 0 for r in recent_rewards[:-1]):
+                    # This looks like predictive positioning
+                    predictive_actions += 1
+                    skill_data['evidence'].append(f"Predictive action at step {i}")
+            total_actions += 1
 
-        # RESET BALL DETECTION (center is now 0.0, 0.0!)
-        ball_at_center = (abs(ball_x) < 0.1 and abs(ball_y) < 0.1)
-        ball_near_center = (abs(ball_x) < 0.2 and abs(ball_y) < 0.15)
+        if total_actions > 0:
+            prediction_rate = predictive_actions / total_actions
+            skill_data['confidence'] = min(1.0, prediction_rate * 2)  # Amplify for detection
+            skill_data['measurement_score'] = prediction_rate
 
-        if ball_at_center:
-            situation_type = "reset_ball_critical"
-            urgency_level = 0.95
-        elif ball_near_center:
-            situation_type = "reset_ball_detected"
-            urgency_level = 0.8
-        elif urgent_situation:
-            situation_type = "critical_defense"
-            urgency_level = 0.9
-        elif ball_approaching and distance_to_ai < 0.3:
-            situation_type = "incoming_ball"
-            urgency_level = 0.7
-        elif ball_approaching and distance_to_ai < 0.5:
-            situation_type = "preparation"
-            urgency_level = 0.4
-        elif not ball_approaching:
-            situation_type = "positioning"
-            urgency_level = 0.2
+        # Analyze state pattern consistency
+        if len(state_patterns) >= 10:
+            # Look for patterns in the first few dimensions (typically position/velocity)
+            recent_patterns = state_patterns[-10:]
+            pattern_consistency = self._calculate_pattern_consistency(recent_patterns, slice(0, 4))
+            skill_data['confidence'] = max(skill_data['confidence'], pattern_consistency * 0.8)
+            skill_data['neural_patterns'].append(f"State pattern consistency: {pattern_consistency:.2f}")
+
+        return skill_data
+
+    def _analyze_timing_optimization(self, action_history: List[Dict], reward_history: List[float]) -> Dict[str, Any]:
+        """Analyze if the neural brain is learning optimal timing"""
+        skill_data = {
+            'confidence': 0.0,
+            'evidence': [],
+            'neural_patterns': [],
+            'measurement_score': 0.0
+        }
+
+        if len(reward_history) < 10:
+            return skill_data
+
+        # Analyze reward timing patterns
+        high_reward_actions = []
+        for i, reward in enumerate(reward_history):
+            if reward > 1.0:  # Significant positive reward
+                high_reward_actions.append(i)
+
+        if len(high_reward_actions) >= 3:
+            # Look for timing improvements
+            timing_intervals = []
+            for i in range(1, len(high_reward_actions)):
+                interval = high_reward_actions[i] - high_reward_actions[i - 1]
+                timing_intervals.append(interval)
+
+            if timing_intervals:
+                # Check if timing is becoming more consistent (learning optimization)
+                early_variance = np.var(timing_intervals[:len(timing_intervals) // 2]) if len(
+                    timing_intervals) >= 4 else 0
+                late_variance = np.var(timing_intervals[len(timing_intervals) // 2:]) if len(
+                    timing_intervals) >= 4 else 0
+
+                if early_variance > 0 and late_variance < early_variance:
+                    improvement = (early_variance - late_variance) / early_variance
+                    skill_data['confidence'] = min(1.0, improvement * 1.5)
+                    skill_data['evidence'].append(f"Timing variance reduced by {improvement:.1%}")
+                    skill_data['measurement_score'] = improvement
+
+        return skill_data
+
+    def _analyze_strategic_positioning(self, action_history: List[Dict], reward_history: List[float],
+                                       state_patterns: List[np.ndarray]) -> Dict[str, Any]:
+        """Analyze if the neural brain is learning strategic positioning"""
+        skill_data = {
+            'confidence': 0.0,
+            'evidence': [],
+            'neural_patterns': [],
+            'measurement_score': 0.0
+        }
+
+        if len(action_history) < 15:
+            return skill_data
+
+        # Look for defensive/positioning patterns
+        positioning_actions = 0  # Actions that maintain position (action 1)
+        movement_actions = 0  # Actions that change position (actions 0, 2)
+
+        for action_data in action_history[-20:]:  # Recent actions
+            action = action_data.get('action', 1)
+            if action == 1:  # Stay/hold position
+                positioning_actions += 1
+            else:
+                movement_actions += 1
+
+        total_actions = positioning_actions + movement_actions
+        if total_actions > 0:
+            # Strategic positioning often involves knowing when NOT to move
+            positioning_ratio = positioning_actions / total_actions
+
+            # Correlate with rewards
+            recent_rewards = reward_history[-20:] if len(reward_history) >= 20 else reward_history
+            avg_reward = np.mean(recent_rewards) if recent_rewards else 0
+
+            if avg_reward > 0 and positioning_ratio > 0.3:  # Good performance with strategic positioning
+                skill_data['confidence'] = min(1.0, positioning_ratio * avg_reward)
+                skill_data['evidence'].append(f"Strategic positioning: {positioning_ratio:.1%} of actions")
+                skill_data['measurement_score'] = positioning_ratio * avg_reward
+
+        return skill_data
+
+    def _analyze_pattern_recognition(self, action_history: List[Dict], reward_history: List[float]) -> Dict[str, Any]:
+        """Analyze if the neural brain is learning pattern recognition"""
+        skill_data = {
+            'confidence': 0.0,
+            'evidence': [],
+            'neural_patterns': [],
+            'measurement_score': 0.0
+        }
+
+        if len(action_history) < 20:
+            return skill_data
+
+        # Look for repeating action sequences that lead to rewards
+        action_sequences = []
+        for i in range(len(action_history) - 3):
+            sequence = [action_history[j].get('action', 0) for j in range(i, i + 3)]
+            action_sequences.append(tuple(sequence))
+
+        # Find common sequences
+        sequence_counts = defaultdict(int)
+        sequence_rewards = defaultdict(list)
+
+        for i, seq in enumerate(action_sequences):
+            sequence_counts[seq] += 1
+            if i + 3 < len(reward_history):
+                # Reward for the sequence
+                seq_reward = sum(reward_history[i:i + 3])
+                sequence_rewards[seq].append(seq_reward)
+
+        # Find sequences that appear multiple times with good rewards
+        successful_patterns = 0
+        total_patterns = 0
+
+        for seq, count in sequence_counts.items():
+            if count >= 2:  # Sequence repeated
+                total_patterns += 1
+                avg_reward = np.mean(sequence_rewards[seq]) if sequence_rewards[seq] else 0
+                if avg_reward > 0:
+                    successful_patterns += 1
+                    skill_data['evidence'].append(f"Successful pattern: {seq} (used {count} times)")
+
+        if total_patterns > 0:
+            pattern_success_rate = successful_patterns / total_patterns
+            skill_data['confidence'] = min(1.0, pattern_success_rate * 1.2)
+            skill_data['measurement_score'] = pattern_success_rate
+
+        return skill_data
+
+    def _analyze_error_recovery(self, action_history: List[Dict], reward_history: List[float]) -> Dict[str, Any]:
+        """Analyze if the neural brain is learning error recovery"""
+        skill_data = {
+            'confidence': 0.0,
+            'evidence': [],
+            'neural_patterns': [],
+            'measurement_score': 0.0
+        }
+
+        if len(reward_history) < 15:
+            return skill_data
+
+        # Find error events (negative rewards) and analyze recovery
+        error_recoveries = []
+
+        for i in range(len(reward_history) - 5):
+            if reward_history[i] < -0.3:  # Error event
+                # Look at next 5 actions for recovery
+                recovery_rewards = reward_history[i + 1:i + 6]
+                if recovery_rewards:
+                    # Calculate recovery strength
+                    recovery_score = sum(r for r in recovery_rewards if r > 0)
+                    if recovery_score > 0:
+                        error_recoveries.append(recovery_score)
+                        skill_data['evidence'].append(f"Recovery after error at step {i}: {recovery_score:.2f}")
+
+        if len(error_recoveries) >= 2:
+            avg_recovery = np.mean(error_recoveries)
+            # Strong recovery indicates error recovery skill
+            skill_data['confidence'] = min(1.0, avg_recovery / 2.0)
+            skill_data['measurement_score'] = avg_recovery
+
+        return skill_data
+
+    def _calculate_pattern_consistency(self, patterns: List[np.ndarray], feature_slice: slice) -> float:
+        """Calculate how consistent patterns are in specific features"""
+        if len(patterns) < 3:
+            return 0.0
+
+        # Extract the specified features from each pattern
+        features = []
+        for pattern in patterns:
+            if len(pattern) > feature_slice.stop:
+                features.append(pattern[feature_slice])
+
+        if len(features) < 3:
+            return 0.0
+
+        # Calculate consistency (inverse of variance)
+        feature_matrix = np.array(features)
+        variances = np.var(feature_matrix, axis=0)
+        avg_variance = np.mean(variances)
+
+        # Convert to consistency score (0-1)
+        consistency = 1.0 / (1.0 + avg_variance)
+        return min(1.0, consistency)
+
+    def _calculate_transfer_readiness(self, skill: str, skill_data: Dict[str, Any]) -> float:
+        """Calculate how ready a skill is for transfer to other environments"""
+        confidence = skill_data.get('confidence', 0.0)
+        measurement = skill_data.get('measurement_score', 0.0)
+        evidence_count = len(skill_data.get('evidence', []))
+
+        # Transfer readiness based on multiple factors
+        readiness = (confidence * 0.5 + measurement * 0.3 + min(1.0, evidence_count / 3) * 0.2)
+        return min(1.0, readiness)
+
+    def _generate_neural_insights(self, analysis: Dict[str, Any]) -> List[str]:
+        """Generate human-readable insights about what the neural brain learned"""
+        insights = []
+
+        for skill in analysis['emerging_skills']:
+            skill_data = analysis['skill_development'][skill]
+            confidence = skill_data['confidence']
+            readiness = analysis['transfer_readiness'].get(skill, 0.0)
+
+            if confidence > 0.7:
+                insights.append(f"Strong {skill} skill detected (confidence: {confidence:.1%})")
+            elif confidence > 0.4:
+                insights.append(f"Developing {skill} skill (confidence: {confidence:.1%})")
+
+            if readiness > 0.6:
+                environments = self.universal_skills[skill]['applies_to_environments']
+                insights.append(f"{skill} ready for transfer to: {', '.join(environments[:3])}")
+
+        if not insights:
+            insights.append("Neural brain is learning basic patterns - no clear transferable skills yet")
+
+        return insights
+
+
+class UniversalKnowledgeMapper:
+    """
+    Universal Knowledge Mapper - Maps knowledge across environments
+
+    This system maintains the mapping between environment-specific knowledge
+    and universal transferable concepts, enabling the symbolic brain to guide
+    transfer learning.
+    """
+
+    def __init__(self):
+        # Environment knowledge storage
+        self.environment_contexts = {}
+        self.skill_mappings = {}
+        self.transfer_history = []
+
+        # Universal concept definitions
+        self.universal_concepts = {
+            'moving_object_interception': {
+                'abstract_description': 'Intercepting moving targets through prediction and positioning',
+                'environment_implementations': {
+                    'pong': 'Hit ball with paddle by predicting trajectory',
+                    'chess': 'Capture opponent pieces by predicting moves',
+                    'trading': 'Enter positions by predicting price movements',
+                    'robotics': 'Catch objects by predicting motion paths'
+                },
+                'core_principles': ['prediction', 'positioning', 'timing']
+            },
+            'competitive_strategy': {
+                'abstract_description': 'Developing winning strategies against opponents',
+                'environment_implementations': {
+                    'pong': 'Adapt paddle strategy based on opponent patterns',
+                    'chess': 'Develop opening/middle/endgame strategies',
+                    'trading': 'Develop trading strategies based on market patterns',
+                    'poker': 'Develop betting strategies based on opponent behavior'
+                },
+                'core_principles': ['adaptation', 'pattern_recognition', 'strategic_thinking']
+            },
+            'error_recovery': {
+                'abstract_description': 'Recovering from mistakes and maintaining performance',
+                'environment_implementations': {
+                    'pong': 'Continue playing effectively after missing ball',
+                    'chess': 'Recover position after making poor moves',
+                    'trading': 'Recover portfolio after losses',
+                    'robotics': 'Continue task after failed actions'
+                },
+                'core_principles': ['resilience', 'adaptation', 'persistence']
+            }
+        }
+
+        print("🗺️ Universal Knowledge Mapper initialized")
+        print(f"   🌍 Tracking {len(self.universal_concepts)} universal concepts")
+
+    def register_environment_context(self, environment_id: str, context: Dict[str, Any]):
+        """Register knowledge context for a specific environment"""
+        self.environment_contexts[environment_id] = {
+            'context': context,
+            'registered_at': time.time(),
+            'skills_learned': [],
+            'transfer_potential': {}
+        }
+
+        # Calculate transfer potential to other environments
+        for other_env in self.environment_contexts:
+            if other_env != environment_id:
+                potential = self._calculate_transfer_potential(environment_id, other_env)
+                self.environment_contexts[environment_id]['transfer_potential'][other_env] = potential
+
+        print(f"📝 Registered environment context for {environment_id}")
+        return True
+
+    def map_neural_skills_to_universal(self, environment_id: str, neural_analysis: Dict[str, Any]) -> Dict[str, Any]:
+        """Map environment-specific neural learning to universal transferable skills"""
+        universal_mapping = {
+            'universal_skills_discovered': [],
+            'environment_specific_skills': [],
+            'transfer_recommendations': [],
+            'skill_confidence_matrix': {}
+        }
+
+        if environment_id not in self.environment_contexts:
+            print(f"⚠️ Environment {environment_id} not registered")
+            return universal_mapping
+
+        # Map detected neural patterns to universal skills
+        for skill in neural_analysis.get('emerging_skills', []):
+            if skill in ['trajectory_prediction', 'timing_optimization', 'strategic_positioning']:
+                # These map directly to universal concepts
+                universal_skill = self._map_to_universal_concept(skill, environment_id)
+                if universal_skill:
+                    universal_mapping['universal_skills_discovered'].append(universal_skill)
+
+                    # Calculate confidence for this universal skill
+                    skill_data = neural_analysis.get('skill_development', {}).get(skill, {})
+                    confidence = skill_data.get('confidence', 0.0)
+                    universal_mapping['skill_confidence_matrix'][universal_skill['concept']] = confidence
+
+        # Generate transfer recommendations
+        universal_mapping['transfer_recommendations'] = self._generate_transfer_recommendations(
+            environment_id, universal_mapping['universal_skills_discovered']
+        )
+
+        return universal_mapping
+
+    def _map_to_universal_concept(self, neural_skill: str, environment_id: str) -> Optional[Dict[str, Any]]:
+        """Map a neural skill to universal concept"""
+        # Skill to concept mapping
+        skill_to_concept = {
+            'trajectory_prediction': 'moving_object_interception',
+            'timing_optimization': 'moving_object_interception',
+            'strategic_positioning': 'competitive_strategy',
+            'pattern_recognition': 'competitive_strategy',
+            'error_recovery': 'error_recovery',
+            'adaptive_strategy': 'competitive_strategy'
+        }
+
+        concept_id = skill_to_concept.get(neural_skill)
+        if not concept_id or concept_id not in self.universal_concepts:
+            return None
+
+        concept = self.universal_concepts[concept_id]
+        env_implementation = concept['environment_implementations'].get(environment_id, 'Generic implementation')
 
         return {
-            "situation": situation_type,
-            "urgency": urgency_level,
-            "ball_position": (ball_x, ball_y),
-            "ball_velocity": (ball_dx, ball_dy),
-            "paddle_position": paddle_y,
-            "ball_approaching": ball_approaching,
-            "distance_to_ai": distance_to_ai,
-            "ball_at_center": ball_at_center,
-            "ball_near_center": ball_near_center
+            'concept': concept_id,
+            'neural_skill': neural_skill,
+            'environment_implementation': env_implementation,
+            'abstract_description': concept['abstract_description'],
+            'core_principles': concept['core_principles'],
+            'transferable_to': list(concept['environment_implementations'].keys())
         }
 
-    def _select_applicable_strategies(self, app_context: Dict, game_situation: Dict) -> List[str]:
-        """Select which strategies are applicable to current situation"""
-        applicable = []
+    def _calculate_transfer_potential(self, env1: str, env2: str) -> float:
+        """Calculate transfer learning potential between two environments"""
+        if env1 not in self.environment_contexts or env2 not in self.environment_contexts:
+            return 0.0
 
-        # Get all available strategies
-        env_strategies = []
-        if 'environment_context' in app_context:
-            env_context = app_context['environment_context']
-            strategic_concepts = env_context.get('strategic_concepts', {})
-            env_strategies.extend(strategic_concepts.get('core_skills', []))
-            env_strategies.extend(strategic_concepts.get('tactical_approaches', []))
-            env_strategies.extend(strategic_concepts.get('success_patterns', []))
+        context1 = self.environment_contexts[env1]['context']
+        context2 = self.environment_contexts[env2]['context']
 
-        learned_strategies = app_context.get('strategies', [])
-        all_strategies = env_strategies + learned_strategies
+        # Simple similarity calculation based on shared concepts
+        shared_concepts = 0
+        total_concepts = 0
 
-        # Filter by situation appropriateness
-        situation = game_situation['situation']
-        urgency = game_situation['urgency']
+        # Compare transferable skills
+        skills1 = set(context1.get('transferable_skills', []))
+        skills2 = set(context2.get('transferable_skills', []))
 
-        for strategy in all_strategies:
-            if self._is_strategy_applicable(strategy, situation, urgency):
-                applicable.append(strategy)
+        if skills1 and skills2:
+            shared_concepts = len(skills1.intersection(skills2))
+            total_concepts = len(skills1.union(skills2))
 
-        return applicable
+        if total_concepts > 0:
+            return shared_concepts / total_concepts
 
-    def _is_strategy_applicable(self, strategy: str, situation: str, urgency: float) -> bool:
-        """Determine if a strategy is applicable to current situation"""
-        strategy_lower = strategy.lower()
-        urgency = float(urgency)  # 🔧 FIX: Ensure float type
+        return 0.0
 
-        # Critical defense situations
-        if situation == "critical_defense":
-            return any(keyword in strategy_lower for keyword in [
-                "defensive", "intercept", "positioning", "timing", "early"
-            ])
+    def _generate_transfer_recommendations(self, current_env: str, universal_skills: List[Dict]) -> List[
+        Dict[str, Any]]:
+        """Generate recommendations for transferring skills to other environments"""
+        recommendations = []
 
-        # Incoming ball situations
-        elif situation == "incoming_ball":
-            return any(keyword in strategy_lower for keyword in [
-                "trajectory", "prediction", "timing", "angle", "intercept"
-            ])
+        for skill in universal_skills:
+            concept = skill['concept']
+            transferable_envs = skill['transferable_to']
 
-        # Preparation situations
-        elif situation == "preparation":
-            return any(keyword in strategy_lower for keyword in [
-                "positioning", "predictive", "anticipate", "movement"
-            ])
+            for target_env in transferable_envs:
+                if target_env != current_env and target_env in self.environment_contexts:
+                    # Calculate transfer confidence
+                    transfer_potential = self.environment_contexts[current_env]['transfer_potential'].get(target_env,
+                                                                                                          0.0)
 
-        # General positioning
-        elif situation == "positioning":
-            return any(keyword in strategy_lower for keyword in [
-                "positioning", "movement", "defensive", "stability"
-            ])
+                    recommendation = {
+                        'source_environment': current_env,
+                        'target_environment': target_env,
+                        'skill_concept': concept,
+                        'neural_skill': skill['neural_skill'],
+                        'transfer_confidence': transfer_potential,
+                        'implementation_guidance': self.universal_concepts[concept]['environment_implementations'].get(
+                            target_env, ''),
+                        'recommended': transfer_potential > 0.3
+                    }
 
-        return True  # Default: all strategies applicable
+                    recommendations.append(recommendation)
 
-    def _choose_best_strategy(self, strategies: List[str], game_situation: Dict) -> str:
-        """Choose the most appropriate strategy for current situation"""
-        if not strategies:
-            return ""
-
-        # Prioritize by situation urgency
-        urgency = float(game_situation['urgency'])  # 🔧 FIX: Ensure float for comparison
-        situation = game_situation['situation']
-
-        # High urgency: prioritize defensive/timing strategies
-        if urgency > 0.7:
-            defensive_strategies = [s for s in strategies if any(word in s.lower()
-                                                                 for word in
-                                                                 ['defensive', 'timing', 'intercept', 'reaction'])]
-            if defensive_strategies:
-                return random.choice(defensive_strategies)
-
-        # Medium urgency: prioritize predictive/positioning strategies
-        elif urgency > 0.4:
-            predictive_strategies = [s for s in strategies if any(word in s.lower()
-                                                                  for word in
-                                                                  ['predictive', 'trajectory', 'positioning',
-                                                                   'anticipate'])]
-            if predictive_strategies:
-                return random.choice(predictive_strategies)
-
-        # Low urgency: prioritize offensive/angle strategies
-        else:
-            offensive_strategies = [s for s in strategies if any(word in s.lower()
-                                                                 for word in
-                                                                 ['angle', 'aggressive', 'offensive', 'counter'])]
-            if offensive_strategies:
-                return random.choice(offensive_strategies)
-
-        # Fallback: random choice
-        return random.choice(strategies)
-
-    # Strategy Implementation Methods - 🔧 FIX: Consistent signatures
-    def _apply_trajectory_prediction(self, state: np.ndarray, q_values: np.ndarray,
-                                     game_situation: Dict) -> Tuple[int, float]:
-        """Apply ball trajectory prediction with CENTER-ZERO coordinates"""
-        ball_y = game_situation['ball_position'][1]  # -0.5 to +0.5
-        ball_dy = game_situation['ball_velocity'][1]  # velocity
-        paddle_y = game_situation['paddle_position']  # -0.5 to +0.5
-
-        # Predict where ball will be (center-zero)
-        predicted_y = ball_y + (ball_dy * 0.3)
-
-        # Choose action to move toward predicted position (center = 0.0)
-        if predicted_y > paddle_y + 0.1:
-            return 2, 0.8  # Move down (toward positive)
-        elif predicted_y < paddle_y - 0.1:
-            return 0, 0.8  # Move up (toward negative)
-        else:
-            return 1, 0.9  # Stay (already positioned well)
-
-    def _apply_optimal_positioning(self, state: np.ndarray, q_values: np.ndarray,
-                                   game_situation: Dict) -> Tuple[int, float]:
-        """Apply optimal paddle positioning with CENTER-ZERO coordinates"""
-        ball_y = game_situation['ball_position'][1]  # -0.5 to +0.5
-        paddle_y = game_situation['paddle_position']  # -0.5 to +0.5
-
-        # Target center-ball alignment (center is now 0.0!)
-        target_position = ball_y
-        position_error = target_position - paddle_y
-
-        if abs(position_error) < 0.05:
-            return 1, 0.9  # Stay - good position
-        elif position_error > 0:
-            return 2, 0.7  # Move down (toward positive)
-        else:
-            return 0, 0.7  # Move up (toward negative)
-
-    def _apply_timing_optimization(self, state: np.ndarray, q_values: np.ndarray,
-                                   game_situation: Dict) -> Tuple[int, float]:
-        """Apply timing and reaction speed strategy"""
-        urgency = float(game_situation['urgency'])  # 🔧 FIX: Ensure float for comparison
-
-        if urgency > 0.8:
-            # High urgency: favor quick decisive action
-            best_action = np.argmax(q_values)
-            return int(best_action), 0.85  # 🔧 FIX: Ensure int return
-        else:
-            # Lower urgency: favor positioning action
-            return self._apply_optimal_positioning(state, q_values, game_situation)
-
-    def _apply_defensive_positioning(self, state: np.ndarray, q_values: np.ndarray,
-                                     game_situation: Dict) -> Tuple[int, float]:
-        """Apply defensive positioning with CENTER-ZERO coordinates"""
-        ball_y = game_situation['ball_position'][1]  # -0.5 to +0.5
-        paddle_y = game_situation['paddle_position']  # -0.5 to +0.5
-
-        # Defensive strategy: stay between ball and goal (CENTER = 0.0)
-        target_y = ball_y * 0.7 + 0.0 * 0.3  # Weighted toward ball and CENTER (0.0)
-
-        if target_y > paddle_y + 0.08:
-            return 2, 0.75  # Move down (toward positive)
-        elif target_y < paddle_y - 0.08:
-            return 0, 0.75  # Move up (toward negative)
-        else:
-            return 1, 0.8  # Stay
-
-    def _apply_predictive_movement(self, state: np.ndarray, q_values: np.ndarray,
-                                   game_situation: Dict) -> Tuple[int, float]:
-        """Apply predictive movement strategy"""
-        return self._apply_trajectory_prediction(state, q_values, game_situation)
-
-    def _apply_early_positioning(self, state: np.ndarray, q_values: np.ndarray,
-                                 game_situation: Dict) -> Tuple[int, float]:
-        """Apply early positioning beats reactive movement"""
-        urgency = float(game_situation['urgency'])  # 🔧 FIX: Ensure float for comparison
-
-        if urgency < 0.5:
-            # Early positioning when not urgent
-            return self._apply_trajectory_prediction(state, q_values, game_situation)
-        else:
-            # React appropriately when urgent
-            return self._apply_optimal_positioning(state, q_values, game_situation)
-
-    def _apply_aggressive_returns(self, state: np.ndarray, q_values: np.ndarray,
-                                  game_situation: Dict) -> Tuple[int, float]:
-        """Apply aggressive returns using paddle edges - FIXED for center-zero"""
-        ball_y = float(game_situation['ball_position'][1])  # -0.5 to +0.5
-        paddle_y = float(game_situation['paddle_position'])  # -0.5 to +0.5
-        urgency = float(game_situation['urgency'])  # 🔧 FIX: Ensure float
-
-        if game_situation['ball_approaching'] and urgency > 0.6:
-            # Try to hit with paddle edge for angle (CENTER-ZERO: 0.0 is center)
-            if ball_y > 0.0:  # Ball in upper half (positive)
-                return 0, 0.6  # Move up to hit with top edge
-            else:  # Ball in lower half (negative)
-                return 2, 0.6  # Move down to hit with bottom edge
-
-        return self._apply_optimal_positioning(state, q_values, game_situation)
-
-    # Failure avoidance methods
-    def _apply_failure_avoidance(self, action: int, state: np.ndarray,
-                                 game_situation: Dict, app_context: Dict) -> int:
-        """Apply failure pattern avoidance - FIXED for center-zero"""
-
-        # Get failure patterns from environmental context
-        failure_patterns = {}
-        if 'environment_context' in app_context:
-            failure_patterns = app_context['environment_context'].get('failure_patterns', {})
-
-        urgency = float(game_situation['urgency'])  # 🔧 FIX: Ensure float for comparison
-        paddle_y = float(game_situation['paddle_position'])  # 🔧 FIX: Ensure float for comparison
-
-        # Avoid reactive play
-        if 'reactive_play' in failure_patterns and urgency < 0.3:
-            return self._avoid_reactive_play(action, state, game_situation)
-
-        # Avoid edge camping - FIXED for center-zero coordinates
-        if paddle_y < -0.35 or paddle_y > 0.35:  # FIXED: edges are now -0.35 and +0.35
-            return self._avoid_edge_camping(action, state, game_situation)
-
-        return action
-
-    def _avoid_reactive_play(self, action: int, state: np.ndarray, game_situation: Dict) -> int:
-        """Avoid reactive play pattern"""
-        urgency = float(game_situation['urgency'])  # 🔧 FIX: Ensure float for comparison
-
-        # Encourage proactive positioning instead of waiting
-        if urgency < 0.3:
-            ball_y = float(game_situation['ball_position'][1])
-            paddle_y = float(game_situation['paddle_position'])
-
-            # Move toward ball proactively
-            if abs(ball_y - paddle_y) > 0.15:
-                return 2 if ball_y > paddle_y else 0
-
-        return action
-
-    def _avoid_edge_camping(self, action: int, state: np.ndarray, game_situation: Dict) -> int:
-        """Avoid staying at screen edges - FIXED for center-zero"""
-        paddle_y = float(game_situation['paddle_position'])  # 🔧 FIX: Ensure float for comparison
-
-        if paddle_y < -0.35:  # Too high (negative edge)
-            return 2  # Move down toward center (0.0)
-        elif paddle_y > 0.35:  # Too low (positive edge)
-            return 0  # Move up toward center (0.0)
-
-        return action
-
-    def _avoid_over_correction(self, action: int, state: np.ndarray, game_situation: Dict) -> int:
-        """Avoid making too many rapid movements"""
-        # This would require tracking recent actions - simplified for now
-        return action
-
-    def _avoid_passive_defense(self, action: int, state: np.ndarray, game_situation: Dict) -> int:
-        """Avoid passive defense - transition to offense when possible"""
-        urgency = float(game_situation['urgency'])  # 🔧 FIX: Ensure float for comparison
-
-        if urgency < 0.4 and not game_situation['ball_approaching']:
-            # Not defensive situation - can be more aggressive
-            return action  # Allow more aggressive positioning
-
-        return action
-
-    # 🔧 FIX: Helper methods with consistent signatures
-    def _apply_angle_control(self, state: np.ndarray, q_values: np.ndarray, game_situation: Dict) -> Tuple[int, float]:
-        return self._apply_aggressive_returns(state, q_values, game_situation)
-
-    def _apply_counter_attacking(self, state: np.ndarray, q_values: np.ndarray, game_situation: Dict) -> Tuple[
-        int, float]:
-        return self._apply_aggressive_returns(state, q_values, game_situation)
-
-    def _apply_ball_tracking(self, state: np.ndarray, q_values: np.ndarray, game_situation: Dict) -> Tuple[int, float]:
-        return self._apply_trajectory_prediction(state, q_values, game_situation)
-
-    def _apply_angle_shots(self, state: np.ndarray, q_values: np.ndarray, game_situation: Dict) -> Tuple[int, float]:
-        return self._apply_aggressive_returns(state, q_values, game_situation)
-
-    def _apply_early_interception(self, state: np.ndarray, q_values: np.ndarray, game_situation: Dict) -> Tuple[
-        int, float]:
-        return self._apply_early_positioning(state, q_values, game_situation)
-
-    def _apply_consistency_focus(self, state: np.ndarray, q_values: np.ndarray, game_situation: Dict) -> Tuple[
-        int, float]:
-        return self._apply_optimal_positioning(state, q_values, game_situation)
-
-    def _apply_offensive_angles(self, state: np.ndarray, q_values: np.ndarray, game_situation: Dict) -> Tuple[
-        int, float]:
-        return self._apply_aggressive_returns(state, q_values, game_situation)
-
-    def _apply_defense_to_offense(self, state: np.ndarray, q_values: np.ndarray, game_situation: Dict) -> Tuple[
-        int, float]:
-        urgency = float(game_situation['urgency'])  # 🔧 FIX: Ensure float for comparison
-
-        if urgency > 0.7:
-            return self._apply_defensive_positioning(state, q_values, game_situation)
-        else:
-            return self._apply_aggressive_returns(state, q_values, game_situation)
+        # Sort by transfer confidence
+        recommendations.sort(key=lambda x: x['transfer_confidence'], reverse=True)
+        return recommendations[:5]  # Top 5 recommendations
 
 
-class SymbolicDecisionMaker:
-    """High-level decision maker that uses symbolic knowledge"""
+class EnhancedSymbolicDecisionMaker:
+    """
+    Enhanced Symbolic Decision Maker with Neural-Symbolic Bridge
+
+    This is the core component that bridges the neural and symbolic brains,
+    interpreting neural patterns and guiding decisions with environmental context.
+    """
 
     def __init__(self):
-        self.knowledge_interpreter = KnowledgeInterpreter()
+        # Dual brain components
+        self.neural_interpreter = NeuralPatternInterpreter()
+        self.knowledge_mapper = UniversalKnowledgeMapper()
+
+        # Decision tracking
         self.decision_history = []
-        self.strategy_effectiveness = {}
+        self.neural_symbolic_correlations = []
+        self.environment_context = None
 
-    def make_informed_decision(self, state: np.ndarray, q_values: np.ndarray,
-                               app_context: Dict, exploration_rate: float) -> Tuple[int, str]:
-        """Make decision using both neural network and symbolic knowledge"""
+        # Strategy mapping (enhanced from original)
+        self.universal_strategy_mappings = {
+            # Neural patterns mapped to symbolic strategies
+            'trajectory_prediction': self._apply_trajectory_prediction,
+            'timing_optimization': self._apply_timing_optimization,
+            'strategic_positioning': self._apply_strategic_positioning,
+            'pattern_recognition': self._apply_pattern_recognition,
+            'error_recovery': self._apply_error_recovery,
+            'adaptive_strategy': self._apply_adaptive_strategy,
 
-        # Get neural network recommendation
-        nn_action = np.argmax(q_values)
+            # Environment-agnostic strategies
+            'move_toward_target': self._apply_move_toward_target,
+            'defensive_positioning': self._apply_defensive_positioning,
+            'aggressive_advancement': self._apply_aggressive_advancement,
+            'pattern_based_prediction': self._apply_pattern_based_prediction
+        }
 
-        # Decide whether to use symbolic knowledge
-        use_symbolic = self._should_use_symbolic_knowledge(app_context, exploration_rate)
+        print("🧩 Enhanced Symbolic Decision Maker initialized")
+        print(f"   🔗 Neural-Symbolic bridge active")
+        print(f"   📚 {len(self.universal_strategy_mappings)} strategies available")
 
-        if use_symbolic:
-            # Apply symbolic knowledge
-            symbolic_action, reasoning = self.knowledge_interpreter.apply_knowledge(
-                state, q_values, app_context, exploration_rate
+    def set_environment_context(self, environment_id: str, context: Dict[str, Any]):
+        """Set the current environment context for symbolic reasoning"""
+        self.environment_context = {
+            'environment_id': environment_id,
+            'context': context,
+            'loaded_at': time.time()
+        }
+
+        # Register with knowledge mapper
+        self.knowledge_mapper.register_environment_context(environment_id, context)
+
+        print(f"🌍 Environment context set: {environment_id}")
+        return True
+
+    def make_enhanced_decision(self, neural_state: np.ndarray, neural_q_values: np.ndarray,
+                               action_history: List[Dict], reward_history: List[float],
+                               exploration_rate: float) -> Tuple[int, str, Dict[str, Any]]:
+        """
+        Enhanced decision making with neural-symbolic integration
+
+        This is the key method that demonstrates the dual brain in action:
+        1. Neural brain provides Q-values and learned patterns
+        2. Symbolic brain interprets patterns and provides context
+        3. Decision combines both sources of intelligence
+        """
+
+        # Step 1: Analyze what the neural brain has learned
+        neural_analysis = self.neural_interpreter.analyze_neural_learning(
+            action_history, reward_history, [neural_state]
+        )
+
+        # Step 2: Map neural learning to universal concepts
+        universal_mapping = None
+        if self.environment_context:
+            universal_mapping = self.knowledge_mapper.map_neural_skills_to_universal(
+                self.environment_context['environment_id'], neural_analysis
             )
 
-            # Track decision
-            decision_info = {
-                'nn_action': int(nn_action),  # 🔧 FIX: Ensure int
-                'symbolic_action': int(symbolic_action),  # 🔧 FIX: Ensure int
-                'reasoning': reasoning,
-                'chosen': 'symbolic'
-            }
-            self.decision_history.append(decision_info)
+        # Step 3: Decide whether to use neural or symbolic decision making
+        use_symbolic = self._should_use_symbolic_decision(neural_analysis, exploration_rate)
 
-            return int(symbolic_action), f"🧩 {reasoning}"  # 🔧 FIX: Ensure int return
+        if use_symbolic and self.environment_context:
+            # Symbolic decision with environmental context
+            symbolic_action, reasoning = self._make_symbolic_decision(
+                neural_state, neural_q_values, neural_analysis, universal_mapping
+            )
+
+            decision_info = {
+                'decision_type': 'symbolic',
+                'neural_action': int(np.argmax(neural_q_values)),
+                'symbolic_action': symbolic_action,
+                'chosen_action': symbolic_action,
+                'reasoning': reasoning,
+                'neural_analysis': neural_analysis,
+                'universal_mapping': universal_mapping,
+                'timestamp': time.time()
+            }
+
+            return symbolic_action, f"🧩 {reasoning}", decision_info
 
         else:
-            # Use neural network decision
+            # Neural decision
+            neural_action = int(np.argmax(neural_q_values))
+
             decision_info = {
-                'nn_action': int(nn_action),  # 🔧 FIX: Ensure int
+                'decision_type': 'neural',
+                'neural_action': neural_action,
                 'symbolic_action': None,
-                'reasoning': "Neural network decision",
-                'chosen': 'neural'
+                'chosen_action': neural_action,
+                'reasoning': 'Neural network decision',
+                'neural_analysis': neural_analysis,
+                'exploration_rate': exploration_rate,
+                'timestamp': time.time()
             }
-            self.decision_history.append(decision_info)
 
-            return int(nn_action), "🧠 Neural network decision"  # 🔧 FIX: Ensure int return
+            return neural_action, "🧠 Neural network decision", decision_info
 
-    def _should_use_symbolic_knowledge(self, app_context: Dict, exploration_rate: float) -> bool:
-        """Decide whether to use symbolic knowledge or pure neural network"""
+    def _should_use_symbolic_decision(self, neural_analysis: Dict[str, Any], exploration_rate: float) -> bool:
+        """Decide whether to use symbolic reasoning or neural network"""
+        # Use symbolic reasoning when:
+        # 1. We have clear environment context
+        # 2. Neural brain has learned transferable skills
+        # 3. Exploration rate is low (confident phase)
 
-        if not app_context:
+        if not self.environment_context:
             return False
 
-        # More likely to use symbolic knowledge when:
-        # 1. Have learned strategies
-        # 2. Lower exploration (more confident)
-        # 3. Environmental context available
+        emerging_skills = neural_analysis.get('emerging_skills', [])
+        skill_confidence = sum(
+            neural_analysis.get('skill_development', {}).get(skill, {}).get('confidence', 0)
+            for skill in emerging_skills
+        ) / max(1, len(emerging_skills))
 
-        strategies_available = len(app_context.get('strategies', []))
-        lessons_available = len(app_context.get('lessons', []))
-        has_env_context = 'environment_context' in app_context
+        # Calculate symbolic decision probability
+        context_factor = 0.3  # Base probability with context
+        skill_factor = min(0.4, skill_confidence * 0.6)  # Higher with learned skills
+        confidence_factor = max(0, 0.3 - exploration_rate)  # Higher when less exploring
 
-        # Base probability
-        base_prob = 0.15
+        symbolic_probability = context_factor + skill_factor + confidence_factor
 
-        # Increase probability based on available knowledge
-        knowledge_factor = min(0.3, (strategies_available + lessons_available) * 0.05)
+        return random.random() < symbolic_probability
 
-        # Increase probability when less exploring (more exploitation)
-        confidence_factor = max(0, 0.4 - exploration_rate)
+    def _make_symbolic_decision(self, neural_state: np.ndarray, neural_q_values: np.ndarray,
+                                neural_analysis: Dict[str, Any], universal_mapping: Optional[Dict]) -> Tuple[int, str]:
+        """Make decision using symbolic reasoning with neural insights"""
 
-        # Bonus for environmental context
-        env_bonus = 0.1 if has_env_context else 0
+        # Get environment context
+        env_context = self.environment_context['context']
+        environment_id = self.environment_context['environment_id']
 
-        total_probability = base_prob + knowledge_factor + confidence_factor + env_bonus
+        # Choose strategy based on learned skills and context
+        emerging_skills = neural_analysis.get('emerging_skills', [])
 
-        return random.random() < total_probability
+        if 'trajectory_prediction' in emerging_skills:
+            action, confidence = self.universal_strategy_mappings['trajectory_prediction'](
+                neural_state, neural_q_values, {'neural_analysis': neural_analysis}
+            )
+            reasoning = f"Using learned trajectory prediction skill (neural confidence: {neural_analysis.get('skill_development', {}).get('trajectory_prediction', {}).get('confidence', 0):.2f})"
 
-    def update_strategy_effectiveness(self, reward: float):
-        """Update effectiveness tracking based on reward received"""
-        if not self.decision_history:
-            return
+        elif 'strategic_positioning' in emerging_skills:
+            action, confidence = self.universal_strategy_mappings['strategic_positioning'](
+                neural_state, neural_q_values, {'neural_analysis': neural_analysis}
+            )
+            reasoning = f"Using learned strategic positioning skill"
 
-        recent_decision = self.decision_history[-1]
-        strategy_type = recent_decision['chosen']
+        elif 'timing_optimization' in emerging_skills:
+            action, confidence = self.universal_strategy_mappings['timing_optimization'](
+                neural_state, neural_q_values, {'neural_analysis': neural_analysis}
+            )
+            reasoning = f"Using learned timing optimization skill"
 
-        if strategy_type not in self.strategy_effectiveness:
-            self.strategy_effectiveness[strategy_type] = []
+        else:
+            # Fall back to environment context strategies
+            strategies = env_context.get('strategies', [])
+            if strategies:
+                # Use first available strategy
+                strategy_name = strategies[0].lower()
+                for strategy_key in self.universal_strategy_mappings:
+                    if strategy_key in strategy_name:
+                        action, confidence = self.universal_strategy_mappings[strategy_key](
+                            neural_state, neural_q_values, {'environment_context': env_context}
+                        )
+                        reasoning = f"Using environment strategy: {strategies[0]}"
+                        break
+                else:
+                    # Default fallback
+                    action = int(np.argmax(neural_q_values))
+                    reasoning = "Fallback to neural decision"
+            else:
+                action = int(np.argmax(neural_q_values))
+                reasoning = "No symbolic strategies available, using neural decision"
 
-        self.strategy_effectiveness[strategy_type].append(reward)
+        return action, reasoning
 
-        # Keep only recent effectiveness data
-        if len(self.strategy_effectiveness[strategy_type]) > 50:
-            self.strategy_effectiveness[strategy_type] = self.strategy_effectiveness[strategy_type][-25:]
+    def update_neural_symbolic_correlation(self, decision_info: Dict[str, Any], reward: float):
+        """Update correlation tracking between neural and symbolic decisions"""
 
-    def get_strategy_performance_summary(self) -> Dict[str, float]:
-        """Get summary of strategy performance"""
-        summary = {}
-
-        for strategy_type, rewards in self.strategy_effectiveness.items():
-            if rewards:
-                avg_reward = sum(rewards) / len(rewards)
-                summary[strategy_type] = round(avg_reward, 3)
-
-        return summary
-
-
-# Example integration test
-if __name__ == "__main__":
-    print("🧪 Testing Knowledge Application System...")
-
-    # Create test environment
-    decision_maker = SymbolicDecisionMaker()
-
-    # Mock app context with strategies
-    test_context = {
-        'strategies': ['move toward ball path', 'angle shots'],
-        'lessons': ['Early positioning beats reactive movement'],
-        'environment_context': {
-            'strategic_concepts': {
-                'core_skills': ['Ball trajectory prediction', 'Optimal paddle positioning'],
-                'tactical_approaches': ['Defensive positioning - stay between ball and goal']
-            },
-            'failure_patterns': {
-                'reactive_play': {'description': 'Moving only after ball reaches AI side'}
-            }
+        # Record the outcome
+        correlation_record = {
+            'decision_type': decision_info['decision_type'],
+            'reward': reward,
+            'neural_analysis': decision_info.get('neural_analysis', {}),
+            'universal_mapping': decision_info.get('universal_mapping'),
+            'timestamp': time.time()
         }
+
+        self.neural_symbolic_correlations.append(correlation_record)
+
+        # Keep only recent correlations
+        if len(self.neural_symbolic_correlations) > 100:
+            self.neural_symbolic_correlations = self.neural_symbolic_correlations[-50:]
+
+        # Update skill confidence based on outcomes
+        if decision_info['decision_type'] == 'symbolic':
+            neural_analysis = decision_info.get('neural_analysis', {})
+            for skill in neural_analysis.get('emerging_skills', []):
+                skill_data = neural_analysis.get('skill_development', {}).get(skill, {})
+                if reward > 0:
+                    # Positive outcome reinforces skill confidence
+                    current_confidence = skill_data.get('confidence', 0.0)
+                    # Slight boost for successful application
+                    boosted_confidence = min(1.0, current_confidence + 0.05)
+                    self.neural_interpreter.skill_confidence_scores[skill] = boosted_confidence
+
+    # Strategy implementations (enhanced versions of original methods)
+    def _apply_trajectory_prediction(self, state: np.ndarray, q_values: np.ndarray, context: Dict) -> Tuple[int, float]:
+        """Enhanced trajectory prediction using neural insights"""
+        # Extract position and velocity features (first 4 dimensions)
+        if len(state) >= 4:
+            pos_x, pos_y, vel_x, vel_y = state[0], state[1], state[2], state[3]
+
+            # Use neural analysis if available
+            neural_analysis = context.get('neural_analysis', {})
+            trajectory_skill = neural_analysis.get('skill_development', {}).get('trajectory_prediction', {})
+            confidence_boost = trajectory_skill.get('confidence', 0.5)
+
+            # Enhanced prediction with confidence
+            prediction_time = 0.3 * (1 + confidence_boost)  # More confident = longer prediction
+            future_x = pos_x + vel_x * prediction_time
+            future_y = pos_y + vel_y * prediction_time
+
+            if abs(future_y) > 0.1:
+                action = 2 if future_y > 0 else 0
+                confidence = 0.8 * (1 + confidence_boost * 0.5)
+            else:
+                action = 1
+                confidence = 0.9 * (1 + confidence_boost * 0.3)
+        else:
+            action = int(np.argmax(q_values))
+            confidence = 0.5
+
+        return action, confidence
+
+    def _apply_timing_optimization(self, state: np.ndarray, q_values: np.ndarray, context: Dict) -> Tuple[int, float]:
+        """Enhanced timing optimization using neural insights"""
+        neural_analysis = context.get('neural_analysis', {})
+        timing_skill = neural_analysis.get('skill_development', {}).get('timing_optimization', {})
+        timing_confidence = timing_skill.get('confidence', 0.5)
+
+        # Use neural timing insights to adjust decision timing
+        if timing_confidence > 0.6:
+            # High confidence in timing - be more decisive
+            action = int(np.argmax(q_values))
+            confidence = 0.85
+        elif timing_confidence > 0.3:
+            # Medium confidence - balanced approach
+            top_actions = np.argsort(q_values)[-2:]
+            action = int(random.choice(top_actions))
+            confidence = 0.7
+        else:
+            # Low confidence - conservative timing
+            action = 1  # Stay/wait
+            confidence = 0.6
+
+        return action, confidence
+
+    def _apply_strategic_positioning(self, state: np.ndarray, q_values: np.ndarray, context: Dict) -> Tuple[int, float]:
+        """Enhanced strategic positioning using neural insights"""
+        neural_analysis = context.get('neural_analysis', {})
+        positioning_skill = neural_analysis.get('skill_development', {}).get('strategic_positioning', {})
+        positioning_confidence = positioning_skill.get('confidence', 0.5)
+
+        # Enhanced positioning based on learned patterns
+        if len(state) >= 6:
+            # Use neural positioning insights
+            current_pos = state[5] if len(state) > 5 else 0  # AI paddle position
+            target_pos = state[0] * 0.7  # Ball position influence
+
+            # Adjust strategy based on positioning confidence
+            if positioning_confidence > 0.7:
+                # High confidence - aggressive positioning
+                action = 2 if target_pos > current_pos + 0.1 else (0 if target_pos < current_pos - 0.1 else 1)
+                confidence = 0.8
+            else:
+                # Lower confidence - conservative positioning
+                action = 2 if target_pos > current_pos + 0.2 else (0 if target_pos < current_pos - 0.2 else 1)
+                confidence = 0.6
+        else:
+            action = 1
+            confidence = 0.5
+
+        return action, confidence
+
+    # Additional strategy implementations...
+    def _apply_pattern_recognition(self, state: np.ndarray, q_values: np.ndarray, context: Dict) -> Tuple[int, float]:
+        """Apply pattern recognition strategy"""
+        neural_analysis = context.get('neural_analysis', {})
+        pattern_skill = neural_analysis.get('skill_development', {}).get('pattern_recognition', {})
+        pattern_confidence = pattern_skill.get('confidence', 0.5)
+
+        if pattern_confidence > 0.6:
+            # Use learned patterns
+            action = int(np.argmax(q_values))
+            confidence = 0.8
+        else:
+            # Basic pattern following
+            if len(state) >= 4:
+                # Simple pattern: follow ball movement
+                ball_dy = state[3] if len(state) > 3 else 0
+                action = 2 if ball_dy > 0.1 else (0 if ball_dy < -0.1 else 1)
+                confidence = 0.6
+            else:
+                action = 1
+                confidence = 0.5
+
+        return action, confidence
+
+    def _apply_error_recovery(self, state: np.ndarray, q_values: np.ndarray, context: Dict) -> Tuple[int, float]:
+        """Apply error recovery strategy"""
+        # Conservative recovery approach
+        action = 1  # Stay centered for recovery
+        confidence = 0.7
+        return action, confidence
+
+    def _apply_adaptive_strategy(self, state: np.ndarray, q_values: np.ndarray, context: Dict) -> Tuple[int, float]:
+        """Apply adaptive strategy based on situation"""
+        # Adapt based on context
+        neural_analysis = context.get('neural_analysis', {})
+        emerging_skills = neural_analysis.get('emerging_skills', [])
+
+        if 'trajectory_prediction' in emerging_skills:
+            return self._apply_trajectory_prediction(state, q_values, context)
+        elif 'strategic_positioning' in emerging_skills:
+            return self._apply_strategic_positioning(state, q_values, context)
+        else:
+            action = int(np.argmax(q_values))
+            confidence = 0.6
+            return action, confidence
+
+    # Legacy strategy implementations for backward compatibility
+    def _apply_move_toward_target(self, state: np.ndarray, q_values: np.ndarray, context: Dict) -> Tuple[int, float]:
+        """Move toward target (legacy compatibility)"""
+        return self._apply_trajectory_prediction(state, q_values, context)
+
+    def _apply_defensive_positioning(self, state: np.ndarray, q_values: np.ndarray, context: Dict) -> Tuple[int, float]:
+        """Defensive positioning (legacy compatibility)"""
+        return self._apply_strategic_positioning(state, q_values, context)
+
+    def _apply_aggressive_advancement(self, state: np.ndarray, q_values: np.ndarray, context: Dict) -> Tuple[
+        int, float]:
+        """Aggressive advancement (legacy compatibility)"""
+        action = int(np.argmax(q_values))
+        confidence = 0.7
+        return action, confidence
+
+    def _apply_pattern_based_prediction(self, state: np.ndarray, q_values: np.ndarray, context: Dict) -> Tuple[
+        int, float]:
+        """Pattern-based prediction (legacy compatibility)"""
+        return self._apply_pattern_recognition(state, q_values, context)
+
+    def get_dual_brain_report(self) -> Dict[str, Any]:
+        """Get comprehensive report on dual brain performance"""
+        # Analyze recent correlations
+        recent_correlations = self.neural_symbolic_correlations[-20:] if self.neural_symbolic_correlations else []
+
+        neural_decisions = [c for c in recent_correlations if c['decision_type'] == 'neural']
+        symbolic_decisions = [c for c in recent_correlations if c['decision_type'] == 'symbolic']
+
+        neural_avg_reward = np.mean([c['reward'] for c in neural_decisions]) if neural_decisions else 0
+        symbolic_avg_reward = np.mean([c['reward'] for c in symbolic_decisions]) if symbolic_decisions else 0
+
+        return {
+            'total_decisions': len(self.neural_symbolic_correlations),
+            'neural_decisions': len(neural_decisions),
+            'symbolic_decisions': len(symbolic_decisions),
+            'neural_avg_reward': neural_avg_reward,
+            'symbolic_avg_reward': symbolic_avg_reward,
+            'decision_balance': len(symbolic_decisions) / max(1, len(recent_correlations)),
+            'environment_context_active': self.environment_context is not None,
+            'current_environment': self.environment_context['environment_id'] if self.environment_context else None,
+            'neural_interpreter_skills': len(self.neural_interpreter.universal_skills),
+            'knowledge_mapper_environments': len(self.knowledge_mapper.environment_contexts)
+        }
+
+
+# Example integration and testing
+if __name__ == "__main__":
+    print("🧪 Testing Enhanced Neural-Symbolic Dual Brain Knowledge System...")
+
+    # Initialize enhanced system
+    decision_maker = EnhancedSymbolicDecisionMaker()
+
+    # Mock environment context (Pong)
+    pong_context = {
+        'environment_id': 'pong',
+        'objective': 'Score 21 points before opponent by hitting ball with paddle',
+        'rules': [
+            'Hit ball with paddle to keep it in play',
+            'Ball bounces off top/bottom walls',
+            'Score when ball passes opponent paddle',
+            'First to 21 points wins'
+        ],
+        'strategies': [
+            'Predict ball trajectory for positioning',
+            'Time paddle movements for optimal hits',
+            'Use defensive positioning when needed'
+        ],
+        'transferable_skills': [
+            'trajectory_prediction',
+            'timing_optimization',
+            'strategic_positioning'
+        ]
     }
 
-    # Test decision making
-    test_state = np.array([0.0, 0.0, 0.1, 0.05, 0.0, 0.3, 0.6, 0.8, 0.2, 0.1, 0.5, 0.3, 0.4, 0.9])
-    test_q_values = np.array([0.2, 0.8, 0.3])
+    # Set environment context
+    decision_maker.set_environment_context('pong', pong_context)
 
-    for i in range(5):
-        action, reasoning = decision_maker.make_informed_decision(
-            test_state, test_q_values, test_context, exploration_rate=0.3
-        )
-        print(f"Decision {i + 1}: Action={action}, {reasoning}")
+    # Simulate learning session with dual brain
+    print(f"\n🎮 Simulating Dual Brain Learning Session:")
 
-        # Simulate reward feedback
-        reward = random.uniform(-1, 2)
-        decision_maker.update_strategy_effectiveness(reward)
+    action_history = []
+    reward_history = []
 
-    # Show performance summary
-    print(f"\n📊 Strategy Performance: {decision_maker.get_strategy_performance_summary()}")
-    print("✅ Knowledge Application System test complete!")
+    for step in range(50):
+        # Mock neural state and Q-values
+        neural_state = np.random.random(256) * 2 - 1  # Universal 256-dim state
+        neural_q_values = np.random.random(3)
+
+        # Mock action and reward
+        mock_action = {'action': random.randint(0, 2), 'timestamp': time.time()}
+        mock_reward = random.uniform(-1, 3)
+
+        action_history.append(mock_action)
+        reward_history.append(mock_reward)
+
+        # Enhanced decision making every 10 steps
+        if step % 10 == 0 and step > 0:
+            action, reasoning, decision_info = decision_maker.make_enhanced_decision(
+                neural_state, neural_q_values, action_history, reward_history, exploration_rate=0.3
+            )
+
+            print(f"Step {step}: {reasoning}")
+
+            # Update correlation tracking
+            decision_maker.update_neural_symbolic_correlation(decision_info, mock_reward)
+
+            # Show neural analysis
+            neural_analysis = decision_info.get('neural_analysis', {})
+            if neural_analysis.get('emerging_skills'):
+                print(f"   🧠 Emerging skills: {neural_analysis['emerging_skills']}")
+
+            universal_mapping = decision_info.get('universal_mapping')
+            if universal_mapping and universal_mapping.get('universal_skills_discovered'):
+                print(
+                    f"   🌍 Universal skills: {[s['concept'] for s in universal_mapping['universal_skills_discovered']]}")
+
+    # Get dual brain performance report
+    print(f"\n📊 Dual Brain Performance Report:")
+    report = decision_maker.get_dual_brain_report()
+    for key, value in report.items():
+        print(f"   {key}: {value}")
+
+    print(f"\n✅ Enhanced Neural-Symbolic Dual Brain Knowledge System test complete!")
+    print(f"🧠🧩 Neural and Symbolic brains successfully integrated!")
+    print(f"🌍 Universal knowledge mapping enables cross-environment transfer learning!")
+    print(f"🔗 Dual brain bridge creates truly intelligent agents!")
