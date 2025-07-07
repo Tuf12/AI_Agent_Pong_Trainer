@@ -9,16 +9,21 @@
   "environment_specific": {
     "pong": {
       "environment_profile": {
-        "display_name": "Arena Pong",
+        "display_name": "Classic Pong",
         "environment_id": "pong",
         "environment_type": "competitive_real_time",
         "first_encountered": 1751557244.2650018,
-        "last_updated": 1751557244.265002,
-        "total_sessions": 0,
+        "last_updated": 1751841207.1644807,
+        "total_sessions": 3,
         "understanding_level": "basic"
       },
       "objectives": {
-        "primary": "Score 21 points before opponent by hitting ball with paddle"
+        "primary": "Score 21 points before opponent by hitting ball with paddle",
+        "secondary": [
+          "Keep ball in play as long as possible",
+          "Prevent opponent from scoring",
+          "Maintain consistent paddle control"
+        ]
       },
       "rules": {
         "core_mechanics": [
@@ -51,7 +56,15 @@
           "Ball position and velocity pattern recognition",
           "Paddle movement optimization for interception",
           "Reward correlation with positioning accuracy",
-          "Temporal sequence learning for prediction"
+          "Temporal sequence learning for prediction",
+          "Strategic positioning rules and principles",
+          "Opponent behavior pattern analysis",
+          "Error recovery strategy development",
+          "Win condition optimization approaches",
+          "Universal prediction and interception skills",
+          "Competitive strategy and adaptation patterns",
+          "Real-time decision making under pressure",
+          "Pattern recognition across dynamic environments"
         ],
         "success_patterns": [
           "Early positioning beats reactive movement",
@@ -59,6 +72,13 @@
           "Adaptive timing based on ball velocity changes",
           "Center positioning provides maximum coverage",
           "Calm recovery after errors maintains performance"
+        ],
+        "winning_strategies": [
+          "Predictive positioning - move to where ball will be",
+          "Defensive positioning - stay centered when ball moving away",
+          "Aggressive positioning - force difficult returns",
+          "Pattern-based prediction - learn opponent tendencies",
+          "Momentum control - manage ball speed and angle"
         ]
       },
       "transferable_skills": [
@@ -107,8 +127,46 @@
       "strategies": [],
       "lessons": [],
       "tactical_knowledge": [],
-      "performance_patterns": [],
-      "neural_insights": [],
+      "performance_patterns": [
+        {
+          "timestamp": 1751840628.7758882,
+          "win": false,
+          "reward": 1.1843925685763637,
+          "outcome_summary": "Enhanced match completed",
+          "transferable_insights": []
+        },
+        {
+          "timestamp": 1751841263.292597,
+          "win": false,
+          "reward": 30.335503566463885,
+          "outcome_summary": "Enhanced match completed",
+          "transferable_insights": []
+        }
+      ],
+      "neural_insights": [
+        {
+          "timestamp": 1751840579.7754676,
+          "neural_skill_development": {},
+          "learning_trajectory": {
+            "trend": 0.0,
+            "stability": 0.0,
+            "acceleration": 0.0
+          },
+          "transfer_readiness": 0.0,
+          "action_reward_correlations": {}
+        },
+        {
+          "timestamp": 1751841207.1649582,
+          "neural_skill_development": {},
+          "learning_trajectory": {
+            "trend": 0.0,
+            "stability": 0.0,
+            "acceleration": 0.0
+          },
+          "transfer_readiness": 0.0,
+          "action_reward_correlations": {}
+        }
+      ],
       "custom_penalties": [],
       "custom_rewards": []
     }
@@ -127,7 +185,7 @@
       "pong"
     ],
     "created": "2025-07-03T10:40:44.265007",
-    "last_updated": "2025-07-03T10:40:53.705245",
+    "last_updated": "2025-07-06T17:34:43.882818",
     "transfer_learning_enabled": true,
     "neural_symbolic_integration": true,
     "environment_knowledge_integration": true

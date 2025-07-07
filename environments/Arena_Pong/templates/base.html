@@ -1251,6 +1251,7 @@
 
                             <div class="game-controls">
                                 <button class="btn btn-danger" onclick="stopTraining()">Stop Match</button>
+                                <button class="btn btn-secondary" onclick="togglePause()" id="pauseBtn">Pause</button>
                                 <button class="btn btn-secondary" onclick="newGame()">New Game</button>
                             </div>
 
@@ -1400,6 +1401,7 @@ let socket = null;
 let currentUser = null;
 let currentMatch = null;
 let gameRunning = false;
+let gamePaused = false;
 let agents = [];
 let matches = [];
 let publicMatches = [];
@@ -1438,7 +1440,14 @@ async function initializeApp() {
 function setupEventListeners() {
     // Keyboard controls for game
     document.addEventListener('keydown', function(e) {
-        if (!gameRunning) return;
+        // Handle pause key (spacebar or 'p')
+        if (e.key === ' ' || e.key === 'p' || e.key === 'P') {
+            e.preventDefault();
+            togglePause();
+            return;
+        }
+        
+        if (!gameRunning || gamePaused) return;
 
         if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
             movePaddle(-1);
@@ -1752,19 +1761,26 @@ function initializeSocket() {
     // Fixed game event handlers
     socket.on('game_update', function(data) {
         console.log('🎮 Game update received:', data);
-        updateGameDisplay(data);
+        // Only update display if game is not paused
+        if (!gamePaused) {
+            updateGameDisplay(data);
+        }
         lastGameState = data;
     });
 
     socket.on('game_started', function(data) {
         console.log('🚀 Game started:', data);
         gameRunning = true;
+        gamePaused = false;
+        updatePauseButton();
         showSuccess('Game started!');
     });
 
     socket.on('game_stopped', function(data) {
         console.log('🛑 Game stopped:', data);
         gameRunning = false;
+        gamePaused = false;
+        updatePauseButton();
     });
 
     socket.on('game_ended', function(data) {
@@ -2856,7 +2872,29 @@ function stopTraining() {
 function newGame() {
     if (currentMatch) {
         gameRunning = false;
+        gamePaused = false;
+        updatePauseButton();
         socket.emit('start_game', { match_id: currentMatch.id });
+    }
+}
+
+function togglePause() {
+    if (!gameRunning || !currentMatch) return;
+    
+    gamePaused = !gamePaused;
+    updatePauseButton();
+    
+    if (gamePaused) {
+        showInfo('Game paused');
+    } else {
+        showInfo('Game resumed');
+    }
+}
+
+function updatePauseButton() {
+    const pauseBtn = document.getElementById('pauseBtn');
+    if (pauseBtn) {
+        pauseBtn.textContent = gamePaused ? 'Resume' : 'Pause';
     }
 }
 
@@ -2871,6 +2909,8 @@ function endTrainingSession() {
 
     currentMatch = null;
     gameRunning = false;
+    gamePaused = false;
+    updatePauseButton();
 
     loadAgents();
     loadMatches();
@@ -3240,6 +3280,127 @@ function hideSuccess() {
     const successDiv = document.getElementById('authSuccess');
     if (successDiv) {
         successDiv.style.display = 'none';
+    }
+}
+
+function showInfo(message) {
+    console.log('Info:', message);
+    // Create temporary info message
+    const tempInfo = document.createElement('div');
+    tempInfo.className = 'success';
+    tempInfo.textContent = message;
+    tempInfo.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 10000; max-width: 300px; background: rgba(102, 170, 255, 0.2); border: 1px solid #66aaff; color: #66aaff;';
+    document.body.appendChild(tempInfo);
+    setTimeout(() => tempInfo.remove(), 3000);
+}
+
+// Leaderboard functions (stub implementations)
+async function loadLeaderboard() {
+    console.log('Loading leaderboard...');
+    // TODO: Implement leaderboard loading
+    const container = document.getElementById('leaderboardList');
+    if (container) {
+        container.innerHTML = '<div class="loading">Leaderboard feature coming soon...</div>';
+    }
+}
+
+function refreshLeaderboard() {
+    loadLeaderboard();
+}
+
+// Tournament functions (stub implementations) 
+async function loadTournaments() {
+    console.log('Loading tournaments...');
+    // TODO: Implement tournament loading
+    const container = document.getElementById('tournamentsList');
+    if (container) {
+        container.innerHTML = '<div class="loading">Tournament feature coming soon...</div>';
+    }
+}
+
+function filterTournaments(filter) {
+    console.log('Filtering tournaments:', filter);
+    loadTournaments();
+}
+
+function showCreateTournament() {
+    const modal = document.getElementById('createTournamentModal');
+    if (modal) {
+        modal.style.display = 'block';
+    }
+}
+
+function hideCreateTournament() {
+    const modal = document.getElementById('createTournamentModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+function createTournament() {
+    console.log('Creating tournament...');
+    hideCreateTournament();
+    showInfo('Tournament creation coming soon!');
+}
+
+function joinTournament() {
+    console.log('Joining tournament...');
+    showInfo('Tournament joining coming soon!');
+}
+
+function hideJoinTournament() {
+    const modal = document.getElementById('joinTournamentModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+// Save agent knowledge function
+async function saveAgentKnowledge() {
+    if (!currentAgentId) {
+        showError('No agent selected');
+        return;
+    }
+    
+    try {
+        // Collect all reward values
+        const pongKnowledge = currentKnowledge.environment_specific?.arena_pong || {};
+        
+        // Update reward structure
+        pongKnowledge.reward_structure = {
+            ball_hit: parseFloat(document.getElementById('hitReward').value),
+            ball_miss: parseFloat(document.getElementById('missReward').value),
+            score_point: parseFloat(document.getElementById('scoreReward').value),
+            concede_point: parseFloat(document.getElementById('concededPenalty').value),
+            match_win: parseFloat(document.getElementById('winReward').value),
+            match_loss: parseFloat(document.getElementById('lossReward').value)
+        };
+        
+        // Update learning parameters
+        pongKnowledge.learning_parameters = {
+            learning_rate: parseFloat(document.getElementById('learningRate').value),
+            exploration_rate: parseFloat(document.getElementById('explorationRate').value),
+            discount_factor: parseFloat(document.getElementById('discountFactor').value)
+        };
+        
+        // Save to server
+        const response = await fetch(`/api/agents/${currentAgentId}/knowledge`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ knowledge: currentKnowledge })
+        });
+        
+        if (response.ok) {
+            showSuccess('Agent knowledge saved successfully!');
+            hideEditAgentKnowledge();
+            loadAgents();
+        } else {
+            const errorData = await response.json();
+            showError(errorData.error || 'Failed to save agent knowledge');
+        }
+        
+    } catch (error) {
+        showError('Failed to save agent knowledge: ' + error.message);
     }
 }
     </script>
