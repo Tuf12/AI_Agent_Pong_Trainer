@@ -178,6 +178,13 @@
 - Network similarities can be identified and leveraged
 - Abstract strategies prove applicable across different domains
 
+## Arena Unlock & Default Partner Overview
+- **Three-tier unlock schedule** driven by rolling 5-match windows; agents advance from Tier 0 → Tier 1 → Tier 2 when their recent hit rate, score rate, and clipped average reward meet tier thresholds and trends stay non-negative.
+- **Performance metrics captured per match**: hit rate (`task_successes / (successes + failures)`), score share (`ai_score / total_points`), clipped average reward ([-2, 2]), plus trend deltas between recent and previous windows to guard against regressions.
+- **History tracking**: each agent stores the last 10 match summaries (`recent_match_metrics` column) so the scheduler (`KnowledgeUnlockScheduler`) can evaluate unlock readiness without reprocessing raw trajectory data.
+- **Default Arena Partner**: when users queue an agent-vs-agent battle, the opponent slot auto-fills with the `Arena Default Partner`, a managed AgentByte instance seeded from `default_partner_profile.json`. Its unlock tier is synchronized with the user’s current tier, keeping both agents on the same knowledge cadence.
+- **Match telemetry**: every match writes a `performance_metrics` JSON blob to the `Match` record capturing both competitors (user agent + partner) so analytics, unlock rules, and UI panels can surface hit/score rates, rewards, and partner metadata.
+
 ## README Update Needed:
 The current README describes Agent Byte v1.2 as a single-user desktop app, but we're now building:
 - **Multi-user SaaS platform** where users create and train their own agents
@@ -188,3 +195,9 @@ The current README describes Agent Byte v1.2 as a single-user desktop app, but w
 
 ## Current Status:
 **Ready to begin implementation with Phase 1: Standardized Neural Network Architecture**
+
+## Developer Testing Entry System
+- Enable passwordless multi-account testing by setting `ENABLE_DEV_ACCOUNT_ENTRY=true` (default for local Flask runs).
+- Hit `/api/dev/accounts` to list or create test users; `/api/dev/accounts/<id>/switch` activates any dev-tier account without passwords.
+- Need several testers at once? POST to `/api/dev/accounts/bulk` (or use the “Create Many Accounts” button in the auth screen panel) with `count` + `label_prefix` to mint up to 20 accounts in one shot.
+- The SaaS UI now shows a "Developer Accounts" panel on the auth screen so engineers can spin up Arena test users quickly, bulk-create them, and swap between them while validating AI-vs-AI flows.

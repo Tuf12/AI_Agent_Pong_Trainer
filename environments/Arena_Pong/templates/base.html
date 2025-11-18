@@ -123,6 +123,45 @@
             box-shadow: 0 0 0 2px rgba(102, 170, 255, 0.2);
         }
 
+        .default-partner-card {
+            background: rgba(102, 170, 255, 0.1);
+            border: 1px solid rgba(102, 170, 255, 0.3);
+            border-radius: 10px;
+            padding: 1rem;
+            min-height: 140px;
+        }
+
+        .default-partner-card h4 {
+            margin-bottom: 0.5rem;
+            color: #66aaff;
+        }
+
+        .default-partner-card p {
+            color: #ddd;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        .partner-meta {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .tier-pill {
+            background: rgba(0, 255, 136, 0.15);
+            color: #00ff88;
+            padding: 0.25rem 0.75rem;
+            border-radius: 999px;
+            font-weight: 600;
+        }
+
+        .tier-note {
+            color: #ccc;
+            font-size: 0.85rem;
+        }
+
         .nav-tabs {
             display: flex;
             gap: 0.5rem;
@@ -913,6 +952,72 @@
         .reward-item input {
             width: 100%;
         }
+
+        /* Developer account switcher */
+        .dev-panel {
+            margin-top: 2.5rem;
+            padding: 1.5rem;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px dashed rgba(255, 255, 255, 0.2);
+        }
+
+        .dev-panel h3 {
+            margin: 0;
+            color: #00ffcc;
+        }
+
+        .dev-panel p {
+            margin: 0.25rem 0 1rem 0;
+            color: #ccc;
+        }
+
+        .dev-panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .dev-account-list {
+            margin-top: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .dev-account-card {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.9rem 1rem;
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.25);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .dev-account-card:hover {
+            border-color: rgba(0, 255, 204, 0.5);
+        }
+
+        .dev-account-email {
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        .dev-account-meta {
+            font-size: 0.85rem;
+            color: #aaa;
+        }
+
+        .dev-account-empty {
+            padding: 0.75rem;
+            text-align: center;
+            color: #999;
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: 6px;
+        }
     </style>
 </head>
 <body>
@@ -940,6 +1045,7 @@
                     <div class="nav-tabs">
                         <button class="nav-tab active" onclick="showAuthTab('login')">Login</button>
                         <button class="nav-tab" onclick="showAuthTab('register')">Register</button>
+                        <button class="nav-tab" onclick="showAuthTab('developer')">Developer</button>
                     </div>
 
                     <!-- Login Form -->
@@ -970,6 +1076,31 @@
                             <input type="password" id="confirmPassword" placeholder="Confirm your password">
                         </div>
                         <button class="btn" onclick="register()" style="width: 100%;">Create Account</button>
+                    </div>
+
+                    <!-- Developer Account Panel -->
+                    <div id="devAccountsPanel" class="dev-panel" style="display: none;">
+                        <div class="dev-panel-header">
+                            <div>
+                                <h3>Developer Test Accounts</h3>
+                                <p>Create test accounts to access and test the app. No passwords needed.</p>
+                            </div>
+                        </div>
+
+                        <div style="margin-bottom: 2rem;">
+                            <div class="form-group">
+                                <label for="devAccountLabel">Account Name</label>
+                                <input type="text" id="devAccountLabel" placeholder="Enter account name (e.g. Test User 1, Arena Bot)" style="width: 100%;">
+                            </div>
+                            <button class="btn" onclick="createDevAccountEntry()" style="width: 100%;">Create Test Account</button>
+                        </div>
+
+                        <div style="margin-top: 2rem;">
+                            <h4 style="margin-bottom: 1rem; color: #66aaff;">Available Test Accounts</h4>
+                            <div id="devAccountsList" class="dev-account-list">
+                                <div class="loading">Loading accounts...</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -1207,10 +1338,15 @@
                                     </select>
                                 </div>
                                 <div class="form-group">
-                                    <label for="challengeOpponentAgent">Opponent Agent</label>
-                                    <select id="challengeOpponentAgent">
-                                        <option value="">Choose opponent...</option>
-                                    </select>
+                                    <label>Training Partner</label>
+                                    <div class="default-partner-card" id="defaultPartnerCard">
+                                        <h4>Arena Default Partner</h4>
+                                        <p>Baseline sparring agent that unlocks knowledge at the same pace as your agent.</p>
+                                        <div class="partner-meta">
+                                            <span class="tier-pill" id="defaultPartnerTier">Tier 0</span>
+                                            <span class="tier-note">Unlocks alongside you</span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                             <div style="text-align: center; margin: 1rem 0;">
@@ -1406,11 +1542,18 @@ let agents = [];
 let matches = [];
 let publicMatches = [];
 let currentSpectatingMatch = null;
+let devAccountsEnabled = false;
 
 // Game state
 let gameCanvas = null;
 let gameContext = null;
 let lastGameState = null;
+
+function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str ?? '';
+    return div.innerHTML;
+}
 
 // Initialize app
 document.addEventListener('DOMContentLoaded', function() {
@@ -1494,6 +1637,12 @@ function setupEventListeners() {
                 login();
             } else if (document.getElementById('registerForm') && document.getElementById('registerForm').style.display !== 'none') {
                 register();
+            } else if (document.getElementById('devAccountsPanel') && document.getElementById('devAccountsPanel').style.display !== 'none') {
+                // Check if the account name input is focused
+                const devInput = document.getElementById('devAccountLabel');
+                if (devInput && document.activeElement === devInput) {
+                    createDevAccountEntry();
+                }
             } else if (document.getElementById('createAgentModal') && document.getElementById('createAgentModal').style.display !== 'none') {
                 createAgent();
             } else if (document.getElementById('editAgentKnowledgeModal') && document.getElementById('editAgentKnowledgeModal').style.display !== 'none') {
@@ -1558,12 +1707,191 @@ function showAuthTab(tab) {
     document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
     event.target.classList.add('active');
 
+    // Hide all forms/panels
+    document.getElementById('loginForm').style.display = 'none';
+    document.getElementById('registerForm').style.display = 'none';
+    document.getElementById('devAccountsPanel').style.display = 'none';
+
+    // Show the selected one
     if (tab === 'login') {
         document.getElementById('loginForm').style.display = 'block';
-        document.getElementById('registerForm').style.display = 'none';
-    } else {
-        document.getElementById('loginForm').style.display = 'none';
+    } else if (tab === 'register') {
         document.getElementById('registerForm').style.display = 'block';
+    } else if (tab === 'developer') {
+        const panel = document.getElementById('devAccountsPanel');
+        if (panel) {
+            panel.style.display = 'block';
+            // Load accounts - panel will stay visible even if load fails
+            loadDevAccounts();
+        }
+    }
+}
+
+async function loadDevAccounts(showToast = false) {
+    const panel = document.getElementById('devAccountsPanel');
+    if (!panel) {
+        return;
+    }
+
+    // Never hide the panel - it's controlled by showAuthTab()
+    // Just load and display accounts, or show error state
+
+    try {
+        const response = await fetch('/api/dev/accounts');
+        let payload = null;
+        try {
+            payload = await response.json();
+        } catch (err) {
+            payload = null;
+        }
+
+        if (!response.ok || !payload) {
+            // Show error state but keep panel visible
+            const list = document.getElementById('devAccountsList');
+            if (list) {
+                list.innerHTML = '<div class="dev-account-empty">Unable to load accounts. Please try again.</div>';
+            }
+            if (showToast) {
+                showError('Failed to load accounts');
+            }
+            return;
+        }
+
+        // Always enabled now, so just render the accounts
+        devAccountsEnabled = true;
+        renderDevAccounts(payload.accounts || []);
+
+        if (showToast) {
+            showSuccess('Developer accounts refreshed');
+            setTimeout(hideSuccess, 2000);
+        }
+    } catch (error) {
+        console.warn('Developer account load failed', error);
+        // Show error state but keep panel visible
+        const list = document.getElementById('devAccountsList');
+        if (list) {
+            list.innerHTML = '<div class="dev-account-empty">Error loading accounts. Please try again.</div>';
+        }
+        if (showToast) {
+            showError('Failed to load accounts');
+        }
+    }
+}
+
+function renderDevAccounts(accounts) {
+    const list = document.getElementById('devAccountsList');
+    if (!list) {
+        return;
+    }
+
+    if (!accounts.length) {
+        list.innerHTML = '<div class="dev-account-empty">No test accounts yet. Create one above to get started.</div>';
+        return;
+    }
+
+    list.innerHTML = accounts.map((account) => {
+        const createdAt = account.created_at ? new Date(account.created_at).toLocaleString() : 'Unknown';
+        const agentCount = typeof account.agent_count === 'number' ? account.agent_count : 0;
+        
+        // Extract a readable name from the email (part before @, replace dashes with spaces, capitalize)
+        let displayName = account.email || 'Test Account';
+        if (displayName.includes('@')) {
+            displayName = displayName.split('@')[0];
+            displayName = displayName.replace(/-/g, ' ');
+            displayName = displayName.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+        }
+        
+        return `
+            <div class="dev-account-card">
+                <div>
+                    <div class="dev-account-email">${escapeHtml(displayName)}</div>
+                    <div class="dev-account-meta">${agentCount} agents • Created ${escapeHtml(createdAt)}</div>
+                </div>
+                <button class="btn btn-secondary" onclick="switchToDevAccount(${account.id})">Use Account</button>
+            </div>
+        `;
+    }).join('');
+}
+
+async function createDevAccountEntry() {
+    const input = document.getElementById('devAccountLabel');
+    const label = input ? input.value.trim() : '';
+
+    if (!label) {
+        showError('Please enter an account name');
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/dev/accounts', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ label })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            if (input) {
+                input.value = '';
+            }
+            showSuccess(`Test account "${label}" created successfully!`);
+            loadDevAccounts();
+        } else {
+            showError(data.error || 'Unable to create test account');
+        }
+    } catch (error) {
+        console.error('Dev account creation error:', error);
+        showError('Unable to create test account');
+    }
+}
+
+async function createMultipleDevAccounts() {
+    const labelInput = document.getElementById('devAccountLabel');
+    const countInput = document.getElementById('devAccountCount');
+
+    const labelPrefix = labelInput ? labelInput.value.trim() : '';
+    const requestedCount = parseInt(countInput ? countInput.value : '1', 10) || 1;
+
+    try {
+        const response = await fetch('/api/dev/accounts/bulk', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ label_prefix: labelPrefix, count: requestedCount })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            showSuccess(`Created ${data.users.length} developer accounts`);
+            loadDevAccounts();
+        } else {
+            showError(data.error || 'Unable to create developer accounts');
+        }
+    } catch (error) {
+        console.error('Bulk dev account creation error:', error);
+        showError('Unable to create developer accounts');
+    }
+}
+
+async function switchToDevAccount(userId) {
+    try {
+        const response = await fetch(`/api/dev/accounts/${userId}/switch`, {
+            method: 'POST'
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            currentUser = data.user;
+            showSuccess(`Now using ${currentUser.email}`);
+            showDashboard();
+        } else {
+            showError(data.error || 'Unable to switch developer account');
+        }
+    } catch (error) {
+        console.error('Dev account switch error:', error);
+        showError('Unable to switch developer account');
     }
 }
 
@@ -1658,6 +1986,7 @@ function showAuth() {
     document.getElementById('dashboardPage').classList.remove('active');
     hideError();
     hideSuccess();
+    loadDevAccounts();
 }
 
 function showDashboard() {
@@ -1791,8 +2120,10 @@ function initializeSocket() {
 
     // Agent vs Agent events
     socket.on('agent_vs_agent_started', function(data) {
+        const opponentName = data.agent2_name || 'Arena Default Partner';
         gameRunning = true;
-        showSuccess(`Agent battle started: ${data.agent1_name} vs ${data.agent2_name}`);
+        showSuccess(`Agent battle started: ${data.agent1_name} vs ${opponentName}`);
+        updateDefaultPartnerCard(data.default_partner);
         console.log('🤖 Agent vs Agent battle started:', data);
     });
 
@@ -1804,7 +2135,8 @@ function initializeSocket() {
     });
 
     socket.on('spectator_match_started', function(data) {
-        showSuccess(`Match started: ${data.agent1_name} vs ${data.agent2_name}`);
+        const opponentName = data.agent2_name || 'Arena Default Partner';
+        showSuccess(`Match started: ${data.agent1_name} vs ${opponentName}`);
     });
 
     socket.on('spectator_game_ended', function(data) {
@@ -2557,7 +2889,6 @@ function loadAgentSelector() {
 
 function loadAgentSelectors() {
     const myAgentSelector = document.getElementById('challengeMyAgent');
-    const opponentSelector = document.getElementById('challengeOpponentAgent');
 
     if (myAgentSelector) {
         myAgentSelector.innerHTML = '<option value="">Choose your agent...</option>';
@@ -2568,33 +2899,26 @@ function loadAgentSelectors() {
             myAgentSelector.appendChild(option);
         });
     }
-
-    if (opponentSelector) {
-        opponentSelector.innerHTML = '<option value="">Loading opponents...</option>';
-        loadPublicAgents();
-    }
 }
 
-async function loadPublicAgents() {
-    try {
-        const response = await fetch('/api/agents/public');
-        if (response.ok) {
-            const data = await response.json();
-            const opponentSelector = document.getElementById('challengeOpponentAgent');
+function updateDefaultPartnerCard(partner) {
+    const card = document.getElementById('defaultPartnerCard');
+    const tierEl = document.getElementById('defaultPartnerTier');
+    if (!card) return;
 
-            if (opponentSelector) {
-                opponentSelector.innerHTML = '<option value="">Choose opponent...</option>';
-                data.agents.forEach(agent => {
-                    const option = document.createElement('option');
-                    option.value = agent.id;
-                    option.textContent = `${agent.name} (${agent.owner_email}) - ELO: ${agent.stats.elo_rating || 1200}`;
-                    opponentSelector.appendChild(option);
-                });
-            }
-        }
-    } catch (error) {
-        console.error('Error loading public agents:', error);
-    }
+    const fallback = {
+        display_name: 'Arena Default Partner',
+        description: 'Baseline sparring agent that unlocks knowledge at the same pace as your agent.',
+        current_tier: 0
+    };
+
+    const info = partner || fallback;
+    const title = card.querySelector('h4');
+    const description = card.querySelector('p');
+
+    if (title) title.textContent = info.display_name || fallback.display_name;
+    if (description) description.textContent = info.description || fallback.description;
+    if (tierEl) tierEl.textContent = `Tier ${info.current_tier ?? info.tier ?? info.knowledge_unlock?.initial_tier ?? 0}`;
 }
 
 async function loadPublicMatches() {
@@ -2627,7 +2951,7 @@ function displayPublicMatches() {
     container.innerHTML = publicMatches.map(match => `
         <div class="match-card">
             <div class="match-info">
-                <h4>${match.agent1_name} vs ${match.agent2_name || 'User'}</h4>
+                <h4>${match.agent1_name} vs ${match.agent2_name || 'Arena Default Partner'}</h4>
                 <div style="font-size: 0.9rem; color: #ccc;">
                     ${match.environment} • ${match.spectator_count} spectators
                 </div>
@@ -2714,16 +3038,10 @@ function initializeGameCanvas() {
 
 async function createAgentChallenge() {
     const myAgentId = document.getElementById('challengeMyAgent').value;
-    const opponentAgentId = document.getElementById('challengeOpponentAgent').value;
     const isPublic = document.getElementById('challengePublic').checked;
 
-    if (!myAgentId || !opponentAgentId) {
-        showError('Please select both agents');
-        return;
-    }
-
-    if (myAgentId === opponentAgentId) {
-        showError('Cannot challenge the same agent');
+    if (!myAgentId) {
+        showError('Please select your agent');
         return;
     }
 
@@ -2733,7 +3051,7 @@ async function createAgentChallenge() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 my_agent_id: myAgentId,
-                opponent_agent_id: opponentAgentId,
+                use_default_partner: true,
                 is_public: isPublic
             })
         });
@@ -3082,6 +3400,10 @@ function updateSpectatorDisplay(gameState) {
             updateSpectatorStats(gameState);
         }
 
+        if (gameState.default_partner) {
+            updateDefaultPartnerCard(gameState.default_partner);
+        }
+
         // Draw spectator overlay
         ctx.fillStyle = 'rgba(255, 170, 0, 0.8)';
         ctx.font = '16px Arial';
@@ -3136,12 +3458,16 @@ function handleGameEnd(data) {
     gameRunning = false;
     console.log('🏁 Game ended:', data);
 
+    const isArenaBattle = currentMatch && currentMatch.match_type === 'enhanced_agent_vs_agent';
+
     if (data.is_tournament_match) {
         showSuccess(`Tournament match complete: ${data.winner} wins! Duration: ${data.match_duration}min`);
-    } else if (data.winner === 'agent1' && currentMatch && currentMatch.agent2_id) {
-        showSuccess('Your agent wins the battle! ELO ratings updated.');
-    } else if (data.winner === 'agent2' && currentMatch && currentMatch.agent2_id) {
-        showSuccess('Opponent agent wins! Better luck next time.');
+    } else if (isArenaBattle) {
+        if (data.winner === 'agent1') {
+            showSuccess('Your agent wins the arena battle! ELO ratings updated.');
+        } else {
+            showSuccess('Arena default partner wins! Review the logs to improve.');
+        }
     } else {
         // Original user vs agent logic
         if (data.winner === 'agent1') {
@@ -3149,6 +3475,10 @@ function handleGameEnd(data) {
         } else {
             showSuccess('You win! Great job training your agent.');
         }
+    }
+
+    if (data.default_partner) {
+        updateDefaultPartnerCard(data.default_partner);
     }
 
     // Update agents list and refresh data

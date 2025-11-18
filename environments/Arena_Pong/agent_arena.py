@@ -4,17 +4,19 @@ import time
 import json
 import uuid
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Dict, List
 import numpy as np
 
 from arena_pong_environment import ArenaPongEnvironment
 from agent_byte import AgentByte
+from default_partner_agent import DefaultArenaAgent
+from knowledge_unlock_schedule import KnowledgeUnlockScheduler, MatchPerformance
 
 
 class AgentArenaSession:
     """Enhanced Agent Arena Session with Universal Adapter Integration and Flask Context Management"""
 
-    def __init__(self, match_id: str, user_id: int, agent1_id: str, agent2_id: str,
+    def __init__(self, match_id: str, user_id: int, agent1_id: str, agent2_id: Optional[str] = None,
                  tournament_id: Optional[str] = None, is_public: bool = True,
                  socketio=None, db=None, app=None):
         self.match_id = match_id
@@ -38,6 +40,7 @@ class AgentArenaSession:
         # Enhanced Agent Byte instances with transfer learning
         self.agent1 = None
         self.agent2 = None
+        self.using_default_partner = agent2_id is None
 
         # Game state
         self.running = False
@@ -47,6 +50,9 @@ class AgentArenaSession:
         # Performance tracking
         self.agent1_performance = {'score': 0, 'hits': 0, 'misses': 0}
         self.agent2_performance = {'score': 0, 'hits': 0, 'misses': 0}
+        self.agent1_reward_history: List[float] = []
+        self.agent2_reward_history: List[float] = []
+        self.default_partner_profile: Optional[Dict[str, Any]] = None
 
         # Transfer learning tracking
         self.transfer_events = []
@@ -88,29 +94,44 @@ class AgentArenaSession:
         # Set environment for modular behavior
         self.agent1.set_environment(self.env)
 
-        # Load Agent 2
-        agent2_record = self.db.session.get(Agent, self.agent2_id)
-        if not agent2_record:
-            raise ValueError(f"Agent 2 {self.agent2_id} not found")
+        if self.agent2_id:
+            # Load Agent 2 from database
+            agent2_record = self.db.session.get(Agent, self.agent2_id)
+            if not agent2_record:
+                raise ValueError(f"Agent 2 {self.agent2_id} not found")
 
-        # Create second enhanced Agent Byte
-        self.agent2 = AgentByte(
-            agent_id=self.agent2_id,
-            environment_id='arena_pong',
-            raw_state_size=14,
-            action_size=3
-        )
+            self.agent2 = AgentByte(
+                agent_id=self.agent2_id,
+                environment_id='arena_pong',
+                raw_state_size=14,
+                action_size=3
+            )
+            self.agent2.set_environment(self.env)
+            self._load_agent_brain(self.agent2, agent2_record)
+            agent2_name = agent2_record.name
+        else:
+            default_partner = DefaultArenaAgent(self.env)
+            self.agent2 = default_partner.agent
+            self.default_partner_profile = {
+                "agent_id": default_partner.profile.agent_id,
+                "display_name": default_partner.profile.display_name,
+                "description": default_partner.profile.description,
+            }
+            agent2_name = default_partner.profile.display_name
 
-        # Set environment for modular behavior
-        self.agent2.set_environment(self.env)
-
-        # Load brain data and transfer learning progress
+        # Load brain data and transfer learning progress for agent1
         self._load_agent_brain(self.agent1, agent1_record)
-        self._load_agent_brain(self.agent2, agent2_record)
+        agent_tier = self._determine_unlock_tier(agent1_record)
+        setattr(self.agent1, "current_unlock_tier", agent_tier)
 
         print(f"✅ Enhanced agents loaded successfully!")
         print(f"   Agent 1: {agent1_record.name}")
-        print(f"   Agent 2: {agent2_record.name}")
+        print(f"   Agent 2: {agent2_name}")
+
+        if self.using_default_partner and hasattr(self.agent2, 'sync_unlock_tier'):
+            self.agent2.sync_unlock_tier(agent_tier)
+            if self.default_partner_profile is not None:
+                self.default_partner_profile['current_tier'] = agent_tier
         print(f"   🧠🧩 Dual brain systems active")
         print(f"   🔄 Transfer learning enabled")
 
@@ -171,6 +192,8 @@ class AgentArenaSession:
         # Reset performance tracking
         self.agent1_performance = {'score': 0, 'hits': 0, 'misses': 0}
         self.agent2_performance = {'score': 0, 'hits': 0, 'misses': 0}
+        self.agent1_reward_history = []
+        self.agent2_reward_history = []
 
         # Start enhanced match in both agents
         env_context = self._get_enhanced_env_context()
@@ -283,6 +306,7 @@ class AgentArenaSession:
 
                 # Process enhanced game physics with dual brain analysis
                 reward1, reward2 = self._process_enhanced_battle_physics()
+                self._record_battle_rewards(reward1, reward2)
 
                 # Enhanced learning with transfer tracking
                 next_state = self.env.create_state()
@@ -363,12 +387,14 @@ class AgentArenaSession:
             reward1 += 3.0
             reward2 -= 0.5
             self.agent1_performance['score'] = self.env.ai_score
+            self.agent2_performance['misses'] = self.agent2_performance.get('misses', 0) + 1
 
         # Agent 2 scoring
         if self.env.player_score > self.agent2_performance['score']:
             reward2 += 3.0
             reward1 -= 0.5
             self.agent2_performance['score'] = self.env.player_score
+            self.agent1_performance['misses'] = self.agent1_performance.get('misses', 0) + 1
 
         # Hit tracking (simplified)
         if base_reward > 0:  # Ball was hit
@@ -380,6 +406,14 @@ class AgentArenaSession:
                 self.agent2_performance['hits'] += 1
 
         return reward1, reward2
+
+    def _record_battle_rewards(self, reward1: float, reward2: float):
+        self.agent1_reward_history.append(float(reward1))
+        self.agent2_reward_history.append(float(reward2))
+        if len(self.agent1_reward_history) > 4000:
+            self.agent1_reward_history = self.agent1_reward_history[-2000:]
+        if len(self.agent2_reward_history) > 4000:
+            self.agent2_reward_history = self.agent2_reward_history[-2000:]
 
     def _track_dual_brain_decisions(self, action1, action2, reward1, reward2):
         """Track dual brain decision making for analysis"""
@@ -418,6 +452,8 @@ class AgentArenaSession:
                 transfer_report = self.agent2.get_transfer_readiness_report()
                 agent2_stats['transfer_readiness'] = transfer_report.get('transfer_readiness_score', 0.0)
             game_state['agent2_stats'] = agent2_stats
+        if self.default_partner_profile:
+            game_state['default_partner'] = self.default_partner_profile
 
         game_state['match_type'] = 'enhanced_agent_vs_agent'
         game_state['spectator_count'] = len(self.spectators)
@@ -427,6 +463,26 @@ class AgentArenaSession:
         game_state['transfer_learning_active'] = True
 
         return game_state
+
+    def _build_performance_summary(self) -> Dict[str, Dict[str, float]]:
+        agent1_perf = MatchPerformance(
+            task_successes=int(self.env.task_successes),
+            task_failures=int(self.env.task_failures),
+            ai_score=int(self.env.ai_score),
+            opponent_score=int(self.env.player_score),
+            reward_per_step=self.agent1_reward_history.copy(),
+        )
+        agent2_perf = MatchPerformance(
+            task_successes=int(self.agent2_performance.get('hits', 0)),
+            task_failures=int(self.agent2_performance.get('misses', 0)),
+            ai_score=int(self.env.player_score),
+            opponent_score=int(self.env.ai_score),
+            reward_per_step=self.agent2_reward_history.copy(),
+        )
+        return {
+            'agent1': agent1_perf.to_summary(),
+            'agent2': agent2_perf.to_summary(),
+        }
 
     def _handle_enhanced_battle_end(self):
         """Handle enhanced battle completion with transfer learning analysis"""
@@ -438,6 +494,7 @@ class AgentArenaSession:
             match_duration = (datetime.utcnow() - self.match_start_time).total_seconds() / 60.0
 
             final_scores = {'agent1': self.env.ai_score, 'agent2': self.env.player_score}
+            performance_summary = self._build_performance_summary()
 
             # End enhanced agent matches with transfer learning analysis
             pong_stats = self.env.get_pong_stats()
@@ -450,10 +507,17 @@ class AgentArenaSession:
             # Update database with enhanced metrics
             if self.db and self.app:
                 with self.app.app_context():
-                    self._update_enhanced_match_database(winner, final_scores, match_duration, transfer_effectiveness)
-                    self._update_enhanced_agent_stats(winner)
+                    self._update_enhanced_match_database(
+                        winner,
+                        final_scores,
+                        match_duration,
+                        transfer_effectiveness,
+                        performance_summary,
+                    )
+                    self._update_enhanced_agent_stats(winner, performance_summary)
                     self._save_enhanced_agent_progress(self.agent1_id, self.agent1, enhanced_stats1)
-                    self._save_enhanced_agent_progress(self.agent2_id, self.agent2, enhanced_stats2)
+                    if self.agent2_id:
+                        self._save_enhanced_agent_progress(self.agent2_id, self.agent2, enhanced_stats2)
 
             # Notify clients with enhanced data
             end_data = {
@@ -469,6 +533,8 @@ class AgentArenaSession:
                     'decisions_tracked': len(self.dual_brain_decisions),
                     'skills_demonstrated': self._get_skills_demonstrated()
                 },
+                'default_partner': self.default_partner_profile,
+                'performance_metrics': performance_summary,
                 'dual_brain_active': True,
                 'game_over': True
             }
@@ -529,7 +595,14 @@ class AgentArenaSession:
 
         return list(skills)
 
-    def _update_enhanced_match_database(self, winner, final_scores, match_duration, transfer_effectiveness):
+    def _update_enhanced_match_database(
+        self,
+        winner,
+        final_scores,
+        match_duration,
+        transfer_effectiveness,
+        performance_summary: Optional[Dict[str, Dict[str, float]]] = None,
+    ):
         """Update match record with enhanced transfer learning metrics"""
         try:
             from saas_app import Match
@@ -542,11 +615,16 @@ class AgentArenaSession:
                 match.transfer_events_count = len(self.transfer_events)
                 match.transferable_skills_used = len(self._get_skills_demonstrated())
                 match.knowledge_transfer_effectiveness = transfer_effectiveness
+                if performance_summary:
+                    payload = dict(performance_summary)
+                    if self.default_partner_profile:
+                        payload['default_partner'] = self.default_partner_profile
+                    match.performance_metrics = json.dumps(payload)
                 self.db.session.commit()
         except Exception as e:
             print(f"❌ Error updating enhanced match database: {e}")
 
-    def _update_enhanced_agent_stats(self, winner):
+    def _update_enhanced_agent_stats(self, winner, performance_summary: Optional[Dict[str, Dict[str, float]]] = None):
         """Update agent win/loss stats with enhanced metrics"""
         try:
             from saas_app import Agent
@@ -565,6 +643,9 @@ class AgentArenaSession:
                 transfer_effectiveness = self._calculate_transfer_effectiveness()
                 agent1_record.knowledge_transfer_success_rate = transfer_effectiveness
                 agent2_record.knowledge_transfer_success_rate = transfer_effectiveness
+
+                self._append_recent_metric(agent1_record, performance_summary, 'agent1')
+                self._append_recent_metric(agent2_record, performance_summary, 'agent2')
 
                 self.db.session.commit()
         except Exception as e:
@@ -602,6 +683,45 @@ class AgentArenaSession:
                 self.db.session.commit()
         except Exception as e:
             print(f"❌ Error saving enhanced agent progress: {e}")
+
+    def _append_recent_metric(self, agent_record, performance_summary: Optional[Dict[str, Dict[str, float]]], key: str):
+        if not agent_record or not performance_summary or key not in performance_summary:
+            return
+        entry = {
+            'match_id': self.match_id,
+            'environment': 'arena_pong',
+            'timestamp': datetime.utcnow().isoformat(),
+            'metrics': performance_summary[key],
+        }
+        try:
+            history = json.loads(agent_record.recent_match_metrics) if agent_record.recent_match_metrics else []
+        except Exception:
+            history = []
+        history.append(entry)
+        history = history[-10:]
+        agent_record.recent_match_metrics = json.dumps(history)
+
+    @staticmethod
+    def _determine_unlock_tier(agent_record) -> int:
+        try:
+            history = json.loads(agent_record.recent_match_metrics) if agent_record and agent_record.recent_match_metrics else []
+        except Exception:
+            history = []
+
+        performances = []
+        for entry in history:
+            metrics = entry.get('metrics', {})
+            performances.append(MatchPerformance(
+                task_successes=int(metrics.get('task_successes', 0)),
+                task_failures=int(metrics.get('task_failures', 0)),
+                ai_score=int(metrics.get('ai_score', 0)),
+                opponent_score=int(metrics.get('opponent_score', 0)),
+                avg_reward=float(metrics.get('avg_reward', 0.0)),
+            ))
+
+        scheduler = KnowledgeUnlockScheduler()
+        current_tier = getattr(agent_record, 'current_unlock_tier', 0) if agent_record else 0
+        return scheduler.evaluate_tier(performances, current_tier)
 
     # Spectator management
     def add_spectator(self, user_id: Optional[int] = None):

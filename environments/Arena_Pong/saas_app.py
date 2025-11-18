@@ -10,6 +10,7 @@ import threading
 import uuid
 import os
 import shutil
+import re
 from datetime import datetime, timezone
 from typing import Dict, Optional, List, Any
 from copy import deepcopy
@@ -26,12 +27,14 @@ from data_pipeline.dataset_builder import build_and_export_dataset
 from arena_pong_environment import ArenaPongEnvironment
 from pong_decision_logger import PongDecisionLogger
 from pong_toolbox import PongToolbox
+from knowledge_unlock_schedule import MatchPerformance, KnowledgeUnlockScheduler
 
 # Flask setup
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'agent_byte_saas_v2_transferable_secret_key'
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///agent_byte_saas_v2.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['ENABLE_DEV_ACCOUNT_ENTRY'] = os.environ.get('ENABLE_DEV_ACCOUNT_ENTRY', 'true').lower() in ('1', 'true', 'yes', 'on')
 
 # Extensions
 db = SQLAlchemy(app)
@@ -64,12 +67,22 @@ class User(db.Model):
 
 
     def to_dict(self):
+        # Safely get agent count - handle case where agents can't be loaded due to missing columns
+        try:
+            agent_count = len(self.agents)
+        except Exception:
+            # If agents can't be loaded (e.g., missing database columns), query count directly
+            try:
+                agent_count = Agent.query.filter_by(user_id=self.id).count()
+            except Exception:
+                agent_count = 0
+        
         return {
             'id': self.id,
             'email': self.email,
             'created_at': self.created_at.isoformat(),
             'subscription_tier': self.subscription_tier,
-            'agent_count': len(self.agents),
+            'agent_count': agent_count,
             'total_agents_created': self.total_agents_created,
             'total_environments_explored': self.total_environments_explored,
             'total_training_time': round(self.total_training_time, 1)
@@ -98,6 +111,8 @@ class Agent(db.Model):
     knowledge_transfer_success_rate = db.Column(db.Float, default=0.0)
     cross_environment_performance = db.Column(db.Text, default='{}')  # JSON dict
     transfer_learning_maturity = db.Column(db.Float, default=0.0)
+    recent_match_metrics = db.Column(db.Text, default='[]')  # JSON list of latest performance summaries
+    current_unlock_tier = db.Column(db.Integer, default=0)
 
     # Architecture metadata
     architecture_version = db.Column(db.String(50), default='Agent Byte v2.0 - Transferable')
@@ -143,6 +158,10 @@ class Agent(db.Model):
         total_games = self.total_wins + self.total_losses
         win_rate = (self.total_wins / max(1, total_games)) * 100
         environments = self.get_environments_experienced()
+        try:
+            recent_metrics = json.loads(self.recent_match_metrics) if self.recent_match_metrics else []
+        except Exception:
+            recent_metrics = []
 
         return {
             'id': self.id,
@@ -168,6 +187,8 @@ class Agent(db.Model):
                 'success_rate': self.knowledge_transfer_success_rate,
                 'cross_environment_ready': len(environments) > 1
             },
+            'current_unlock_tier': self.current_unlock_tier,
+            'recent_match_metrics': recent_metrics,
             'architecture_version': self.architecture_version
         }
 
@@ -194,6 +215,7 @@ class Match(db.Model):
     transfer_events_count = db.Column(db.Integer, default=0)
     transferable_skills_used = db.Column(db.Integer, default=0)
     knowledge_transfer_effectiveness = db.Column(db.Float, default=0.0)
+    performance_metrics = db.Column(db.Text, default='{}')
 
     agent1 = db.relationship('Agent', foreign_keys=[agent1_id], backref='matches_as_agent1')
     agent2 = db.relationship('Agent', foreign_keys=[agent2_id], backref='matches_as_agent2')
@@ -210,7 +232,7 @@ class Match(db.Model):
             'started_at': self.started_at.isoformat(),
             'completed_at': self.completed_at.isoformat() if self.completed_at else None,
             'agent1_name': self.agent1.name if self.agent1 else 'Unknown',
-            'agent2_name': self.agent2.name if self.agent2 else 'User',
+            'agent2_name': self.agent2.name if self.agent2 else 'Arena Default Partner',
             'match_type': self.match_type,
             'spectator_count': self.spectator_count,
             'is_public': self.is_public,
@@ -218,7 +240,8 @@ class Match(db.Model):
                 'events_count': self.transfer_events_count,
                 'skills_used': self.transferable_skills_used,
                 'effectiveness': round(self.knowledge_transfer_effectiveness, 3)
-            }
+            },
+            'performance_metrics': json.loads(self.performance_metrics) if self.performance_metrics else {}
         }
 
 
@@ -375,7 +398,13 @@ def _read_json_file(path: str, fallback: Optional[Dict] = None) -> Dict:
     try:
         if os.path.exists(path):
             with open(path, 'r') as f:
-                return json.load(f)
+                data = json.load(f)
+                # Ensure we return a dict, not a list
+                if isinstance(data, dict):
+                    return data
+                else:
+                    print(f"⚠️  JSON file {path} contains {type(data).__name__}, expected dict, using fallback")
+                    return fallback.copy() if fallback else {}
     except Exception as e:
         print(f"⚠️ Could not read JSON file {path}: {e}")
     return fallback.copy() if fallback else {}
@@ -390,6 +419,49 @@ def _write_json_file(path: str, data: Dict):
         print(f"❌ Could not write JSON file {path}: {e}")
 
 
+def _dev_accounts_enabled() -> bool:
+    """Return True when developer account entry is allowed."""
+    return True  # Always enabled for development
+
+
+def _slugify_label(label: str) -> str:
+    """Create a safe slug for dev account identifiers."""
+    slug = re.sub(r'[^a-z0-9]+', '-', label.lower()).strip('-')
+    if not slug:
+        slug = 'dev'
+    return slug[:40]
+
+
+def _generate_dev_email(label: str) -> str:
+    """Generate a unique placeholder email for developer accounts."""
+    timestamp = datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')
+    base = _slugify_label(label)
+    candidate = f"{base}-{timestamp}@dev.local"
+    suffix = 1
+
+    while User.query.filter_by(email=candidate).first():
+        candidate = f"{base}-{timestamp}-{suffix}@dev.local"
+        suffix += 1
+
+    return candidate
+
+
+def _create_dev_user_record(label: str, preferred_email: Optional[str] = None) -> User:
+    """Create a dev-tier user object without committing to the DB."""
+    safe_label = (label or 'Dev Tester').strip() or 'Dev Tester'
+    email = preferred_email.lower() if preferred_email else _generate_dev_email(safe_label)
+    password_hash = bcrypt.generate_password_hash(uuid.uuid4().hex).decode('utf-8')
+
+    user = User(
+        email=email,
+        password_hash=password_hash,
+        subscription_tier='dev'
+    )
+
+    db.session.add(user)
+    return user
+
+
 def _load_environment_context(environment: str) -> Dict[str, Any]:
     if environment in ['pong', 'arena_pong']:
         from arena_pong_environment import ArenaPongEnvironment
@@ -400,7 +472,17 @@ def _load_environment_context(environment: str) -> Dict[str, Any]:
 
 def _build_environment_block(environment: str, env_context: Dict[str, Any]) -> Dict[str, Any]:
     objective = env_context.get('objective', {})
-    rules = env_context.get('rules', {})
+    
+    # FIX: rules from get_env_context() is a LIST, not a dict!
+    rules_raw = env_context.get('rules', [])
+    # Handle both list and dict formats
+    if isinstance(rules_raw, list):
+        # If it's a list (from get_env_context), use it directly for core_mechanics
+        rules_dict = {'core_mechanics': rules_raw}
+    else:
+        # If it's already a dict, use it as-is
+        rules_dict = rules_raw if isinstance(rules_raw, dict) else {}
+    
     strategic = env_context.get('strategic_concepts', {})
     learning = env_context.get('learning_recommendations', {})
     reward_structure = {
@@ -423,24 +505,24 @@ def _build_environment_block(environment: str, env_context: Dict[str, Any]) -> D
             "last_updated": time.time()
         },
         "objectives": {
-            "primary": objective.get('primary', 'Score 21 points before opponent'),
-            "secondary": objective.get('secondary', []),
-            "victory_conditions": objective.get('victory_conditions', []),
-            "failure_conditions": objective.get('failure_conditions', [])
+            "primary": objective.get('primary', 'Score 21 points before opponent') if isinstance(objective, dict) else 'Score 21 points before opponent',
+            "secondary": objective.get('secondary', []) if isinstance(objective, dict) else [],
+            "victory_conditions": objective.get('victory_conditions', []) if isinstance(objective, dict) else [],
+            "failure_conditions": objective.get('failure_conditions', []) if isinstance(objective, dict) else []
         },
         "rules": {
-            "core_mechanics": rules.get('core_mechanics', env_context.get('rules', [])),
-            "constraints": rules.get('constraints', []),
-            "scoring": rules.get('scoring', []),
-            "special_conditions": rules.get('special_conditions', []),
-            "game_mechanics": env_context.get('game_mechanics', {})
+            "core_mechanics": rules_dict.get('core_mechanics', rules_raw if isinstance(rules_raw, list) else []),
+            "constraints": rules_dict.get('constraints', []),
+            "scoring": rules_dict.get('scoring', []),
+            "special_conditions": rules_dict.get('special_conditions', []),
+            "game_mechanics": env_context.get('game_mechanics', {}) if isinstance(env_context.get('game_mechanics'), dict) else {}
         },
         "strategic_framework": {
-            "core_skills_required": strategic.get('core_skills', []),
-            "tactical_approaches": strategic.get('tactical_approaches', []),
-            "success_patterns": strategic.get('success_patterns', []),
-            "failure_patterns": strategic.get('failure_patterns', []),
-            "recommended_focus": strategic.get('recommended_focus', [])
+            "core_skills_required": strategic.get('core_skills', []) if isinstance(strategic, dict) else [],
+            "tactical_approaches": strategic.get('tactical_approaches', []) if isinstance(strategic, dict) else [],
+            "success_patterns": strategic.get('success_patterns', []) if isinstance(strategic, dict) else [],
+            "failure_patterns": strategic.get('failure_patterns', []) if isinstance(strategic, dict) else [],
+            "recommended_focus": strategic.get('recommended_focus', []) if isinstance(strategic, dict) else []
         },
         "transferable_skills": env_context.get('transferable_skills', []),
         "learning_recommendations": learning,
@@ -518,6 +600,10 @@ def _build_minimal_personalized_document(agent_id: str, environment: str,
     env_block['objectives']['victory_conditions'] = env_block['objectives'].get('victory_conditions', [])[:1]
     env_block['objectives']['failure_conditions'] = env_block['objectives'].get('failure_conditions', [])[:1]
 
+    # Ensure rules is a dict before accessing
+    if not isinstance(env_block.get('rules'), dict):
+        env_block['rules'] = {'core_mechanics': [], 'constraints': [], 'scoring': [], 'special_conditions': []}
+    
     core_mechanics = env_block['rules'].get('core_mechanics', [])
     env_block['rules']['core_mechanics'] = core_mechanics[:3] if core_mechanics else core_mechanics
     env_block['rules']['constraints'] = []
@@ -581,14 +667,38 @@ def _ensure_environment_knowledge(agent_id: str, environment: str):
         default_doc = _base_knowledge_document(agent_id, environment, env_context)
         _write_json_file(default_path, default_doc)
     else:
-        default_doc = _read_json_file(default_path)
+        default_doc = _read_json_file(default_path, fallback={})
+        # Ensure it's a dict immediately after reading
+        if not isinstance(default_doc, dict):
+            print(f"⚠️  default_doc from {default_path} is not a dict (got {type(default_doc)}), creating new default")
+            default_doc = _base_knowledge_document(agent_id, environment, env_context)
+            _write_json_file(default_path, default_doc)
+
+    # Ensure default_doc is a dict before using it
+    if not isinstance(default_doc, dict):
+        print(f"⚠️  default_doc is not a dict before building personalized, creating new default")
+        default_doc = _base_knowledge_document(agent_id, environment, env_context)
+        _write_json_file(default_path, default_doc)
 
     if not os.path.exists(personalized_path):
         minimal_doc = _build_minimal_personalized_document(agent_id, environment, env_context, default_doc)
         _write_json_file(personalized_path, minimal_doc)
 
-    personalized_doc = _read_json_file(personalized_path)
-    default_doc = default_doc or _read_json_file(default_path)
+    personalized_doc = _read_json_file(personalized_path, fallback={})
+    # Re-read default_doc to ensure we have the latest, but use existing if it's valid
+    if not isinstance(default_doc, dict):
+        default_doc = _read_json_file(default_path, fallback={})
+    
+    # Final safety check - ensure both are dictionaries
+    if not isinstance(personalized_doc, dict):
+        print(f"⚠️  personalized_doc is not a dict, resetting to minimal")
+        personalized_doc = _build_minimal_personalized_document(agent_id, environment, env_context, default_doc)
+        _write_json_file(personalized_path, personalized_doc)
+    if not isinstance(default_doc, dict):
+        print(f"⚠️  default_doc is not a dict, resetting to base")
+        default_doc = _base_knowledge_document(agent_id, environment, env_context)
+        _write_json_file(default_path, default_doc)
+    
     return personalized_path, default_path, personalized_doc, default_doc
 
 
@@ -629,6 +739,7 @@ class GameSession:
         self.transfer_events = []
         self.transferable_skills_used = []
         self.knowledge_effectiveness = 0.0
+        self.reward_history: List[float] = []
 
         # Initialize Pong Decision Logger and Toolbox for knowledge sample tracking (Phase 4)
         if environment == 'pong':
@@ -835,6 +946,7 @@ class GameSession:
 
         self.running = True
         self.match_start_time = datetime.now(timezone.utc)
+        self.reward_history = []
 
         # Reset environment
         self.env.reset_game()
@@ -905,6 +1017,8 @@ class GameSession:
                 else:
                     # Fallback to direct environment call if toolbox not available
                     next_state, reward, game_ended, info = self.env.step(ai_action)
+
+                self._record_step_reward(reward)
 
                 # Log knowledge samples if meaningful event occurred (Phase 4)
                 if self.decision_logger:
@@ -993,6 +1107,83 @@ class GameSession:
             self.trajectory_buffer.append(buffer_entry)
         except Exception as e:
             print(f"⚠️ Could not buffer trajectory step: {e}")
+
+    def _record_step_reward(self, reward: Optional[float]) -> None:
+        if reward is None:
+            return
+        if not hasattr(self, 'reward_history'):
+            self.reward_history = []
+        self.reward_history.append(float(reward))
+        if len(self.reward_history) > 2000:
+            self.reward_history = self.reward_history[-1000:]
+
+    @staticmethod
+    def _safe_divide(numerator: float, denominator: float) -> float:
+        return numerator / denominator if denominator else 0.0
+
+    def _build_match_performance_summary(self) -> Dict[str, Any]:
+        match_perf = MatchPerformance(
+            task_successes=int(self.env.task_successes),
+            task_failures=int(self.env.task_failures),
+            ai_score=int(self.env.ai_score),
+            opponent_score=int(self.env.player_score),
+            reward_per_step=self.reward_history.copy() if hasattr(self, 'reward_history') else None,
+        )
+
+        opponent_successes = int(getattr(self.env, 'task_completions', 0))
+        opponent_failures = int(getattr(self.env, 'task_failures_major', 0))
+        opponent_summary = {
+            "task_successes": float(opponent_successes),
+            "task_failures": float(opponent_failures),
+            "ai_score": float(self.env.player_score),
+            "opponent_score": float(self.env.ai_score),
+            "hit_rate": self._safe_divide(opponent_successes, opponent_successes + opponent_failures),
+            "score_rate": self._safe_divide(self.env.player_score, self.env.player_score + self.env.ai_score),
+            "avg_reward": 0.0,
+        }
+
+        return {
+            "agent1": match_perf.to_summary(),
+            "opponent": opponent_summary,
+            "samples_recorded": len(self.reward_history) if hasattr(self, 'reward_history') else 0,
+        }
+
+    def _append_recent_metric(self, agent_record: Agent, performance_summary: Optional[Dict[str, Any]], key: str):
+        if not performance_summary or key not in performance_summary:
+            return
+        entry = {
+            'match_id': self.match_id,
+            'environment': self.environment,
+            'timestamp': datetime.now(timezone.utc).isoformat(),
+            'metrics': performance_summary[key]
+        }
+        try:
+            history = json.loads(agent_record.recent_match_metrics) if agent_record.recent_match_metrics else []
+        except Exception:
+            history = []
+        history.append(entry)
+        history = history[-10:]
+        agent_record.recent_match_metrics = json.dumps(history)
+
+    def _evaluate_unlock_tier(self, agent_record: Agent) -> int:
+        try:
+            history = json.loads(agent_record.recent_match_metrics) if agent_record.recent_match_metrics else []
+        except Exception:
+            history = []
+
+        performances = []
+        for entry in history:
+            metrics = entry.get('metrics', {})
+            performances.append(MatchPerformance(
+                task_successes=int(metrics.get('task_successes', 0)),
+                task_failures=int(metrics.get('task_failures', 0)),
+                ai_score=int(metrics.get('ai_score', 0)),
+                opponent_score=int(metrics.get('opponent_score', 0)),
+                avg_reward=float(metrics.get('avg_reward', 0.0))
+            ))
+
+        scheduler = KnowledgeUnlockScheduler()
+        return scheduler.evaluate_tier(performances, getattr(agent_record, 'current_unlock_tier', 0))
 
     def _finalize_trajectory_run(self, enhanced_stats: Optional[Dict[str, Any]] = None):
         """Persist buffered trajectory data to the database."""
@@ -1120,6 +1311,8 @@ class GameSession:
                 'user': self.env.player_score
             }
 
+            performance_summary = self._build_match_performance_summary()
+
             # Get enhanced stats
             pong_stats = self.env.get_pong_stats()
             enhanced_stats = self.agent1.end_match(winner_name, final_scores, pong_stats)
@@ -1128,7 +1321,7 @@ class GameSession:
             self._finalize_trajectory_run(enhanced_stats)
 
             # Update database with transfer learning metrics
-            self._update_database_with_transfer_metrics(winner, final_scores, enhanced_stats)
+            self._update_database_with_transfer_metrics(winner, final_scores, enhanced_stats, performance_summary)
 
             # Notify clients
             end_data = {
@@ -1142,6 +1335,7 @@ class GameSession:
                     'effectiveness': self.knowledge_effectiveness,
                     'environment': self.environment
                 },
+                'performance_metrics': performance_summary,
                 'game_over': True
             }
 
@@ -1178,7 +1372,13 @@ class GameSession:
             print(f"❌ Error calculating transfer effectiveness: {e}")
             return 0.0
 
-    def _update_database_with_transfer_metrics(self, winner: str, final_scores: Dict, enhanced_stats: Dict):
+    def _update_database_with_transfer_metrics(
+        self,
+        winner: str,
+        final_scores: Dict,
+        enhanced_stats: Dict,
+        performance_summary: Optional[Dict[str, Any]] = None
+    ):
         """Update database with transfer learning metrics"""
         try:
             with app.app_context():
@@ -1192,6 +1392,8 @@ class GameSession:
                     match.transfer_events_count = len(self.transfer_events)
                     match.transferable_skills_used = len(self.transferable_skills_used)
                     match.knowledge_transfer_effectiveness = self.knowledge_effectiveness
+                    if performance_summary:
+                        match.performance_metrics = json.dumps(performance_summary)
 
                 # Update agent record
                 agent_record = Agent.query.get(self.agent1_id)
@@ -1218,6 +1420,8 @@ class GameSession:
                         'last_updated': time.time()
                     }
                     agent_record.update_cross_environment_performance(self.environment, env_performance)
+                    self._append_recent_metric(agent_record, performance_summary, 'agent1')
+                    agent_record.current_unlock_tier = self._evaluate_unlock_tier(agent_record)
 
                 # Update user metrics
                 user = User.query.get(self.user_id)
@@ -1244,10 +1448,13 @@ class GameSession:
 
         self.env.move_player_paddle(direction)
 
-        # Get user demo for enhanced learning
+        # Get user demo for enhanced learning (if method exists)
         demo_outcome = self.env.evaluate_user_action_outcome()
         if demo_outcome and self.agent1:
-            self.agent1.record_user_demo(demo_outcome)
+            # Check if the agent has the record_user_demo method before calling it
+            if hasattr(self.agent1, 'record_user_demo'):
+                self.agent1.record_user_demo(demo_outcome)
+            # If method doesn't exist, silently skip (feature not yet implemented)
 
     def stop_game(self):
         """Stop the enhanced game"""
@@ -1342,6 +1549,83 @@ def get_current_user():
     return jsonify({'user': user.to_dict()})
 
 
+@app.route('/api/dev/accounts', methods=['GET'])
+def list_dev_accounts():
+    """Return the pool of developer accounts when dev access is enabled."""
+    # Ensure database is migrated (run migration if needed)
+    try:
+        migrate_agent_table()
+    except Exception as e:
+        print(f"⚠️  Migration check failed: {e}")
+    
+    dev_users = User.query.filter_by(subscription_tier='dev').order_by(User.created_at.asc()).all()
+    return jsonify({
+        'enabled': True,  # Always enabled
+        'accounts': [user.to_dict() for user in dev_users],
+        'count': len(dev_users)
+    })
+
+
+@app.route('/api/dev/accounts', methods=['POST'])
+def create_dev_account_entry():
+    """Create a passwordless developer account for rapid testing."""
+    try:
+        data = request.get_json() or {}
+        label = (data.get('label') or '').strip()
+        preferred_email = (data.get('email') or '').strip()
+
+        if preferred_email and User.query.filter_by(email=preferred_email.lower()).first():
+            return jsonify({'error': 'Email already in use'}), 400
+
+        if not label and not preferred_email:
+            label = 'Dev Tester'
+
+        user = _create_dev_user_record(label or 'Dev Tester', preferred_email or None)
+        db.session.commit()
+
+        return jsonify({'success': True, 'user': user.to_dict()}), 201
+    except Exception as e:
+        db.session.rollback()
+        print(f"❌ Dev account creation error: {e}")
+        return jsonify({'error': 'Failed to create developer account'}), 500
+
+
+@app.route('/api/dev/accounts/<int:user_id>/switch', methods=['POST'])
+def switch_to_dev_account(user_id: int):
+    """Instantly switch session to the requested developer account."""
+    user = User.query.get(user_id)
+    if not user or user.subscription_tier != 'dev':
+        return jsonify({'error': 'Developer account not found'}), 404
+
+    session['user_id'] = user.id
+    session['email'] = user.email
+
+    return jsonify({'success': True, 'user': user.to_dict()})
+
+
+@app.route('/api/dev/accounts/bulk', methods=['POST'])
+def bulk_create_dev_accounts():
+    """Create multiple developer accounts in one request."""
+    data = request.get_json() or {}
+    requested_count = int(data.get('count', 1)) if str(data.get('count', '')).isdigit() else 1
+    count = max(1, min(20, requested_count))
+    label_prefix = (data.get('label_prefix') or data.get('label') or 'Dev Tester').strip() or 'Dev Tester'
+
+    created_users: List[User] = []
+    try:
+        for idx in range(count):
+            label = f"{label_prefix} {idx + 1}" if count > 1 else label_prefix
+            user = _create_dev_user_record(label)
+            created_users.append(user)
+
+        db.session.commit()
+        return jsonify({'success': True, 'users': [user.to_dict() for user in created_users]})
+    except Exception as e:
+        db.session.rollback()
+        print(f"❌ Bulk dev account creation error: {e}")
+        return jsonify({'error': 'Failed to create developer accounts'}), 500
+
+
 @app.route('/api/users/preferences', methods=['POST'])
 def save_user_preferences():
     """Persist a new user preference snapshot for personalization-aware training."""
@@ -1405,6 +1689,12 @@ def get_user_agents():
     user_id = session.get('user_id')
     if not user_id:
         return jsonify({'error': 'Not authenticated'}), 401
+
+    # Ensure database is migrated (run migration if needed)
+    try:
+        migrate_agent_table()
+    except Exception as e:
+        print(f"⚠️  Migration check failed: {e}")
 
     agents = Agent.query.filter_by(user_id=user_id).order_by(Agent.created_at.desc()).all()
     agents_data = []
@@ -1568,8 +1858,26 @@ def get_agent_knowledge(agent_id):
         personalized_path, default_path, knowledge_data, default_doc = _ensure_environment_knowledge(agent_id, environment)
         env_key = _frontend_env_key(environment)
 
-        env_knowledge = knowledge_data.get('environment_specific', {}).get(environment, {})
-        default_env = default_doc.get('environment_specific', {}).get(environment, {})
+        # Ensure knowledge_data and default_doc are dictionaries
+        if not isinstance(knowledge_data, dict):
+            print(f"⚠️  knowledge_data is not a dict, got {type(knowledge_data)}, resetting to empty dict")
+            knowledge_data = {}
+        if not isinstance(default_doc, dict):
+            print(f"⚠️  default_doc is not a dict, got {type(default_doc)}, resetting to empty dict")
+            default_doc = {}
+
+        # Safely get environment-specific data
+        env_specific = knowledge_data.get('environment_specific', {})
+        if not isinstance(env_specific, dict):
+            print(f"⚠️  knowledge_data.environment_specific is not a dict, got {type(env_specific)}")
+            env_specific = {}
+        env_knowledge = env_specific.get(environment, {}) if isinstance(env_specific, dict) else {}
+        
+        default_env_specific = default_doc.get('environment_specific', {})
+        if not isinstance(default_env_specific, dict):
+            print(f"⚠️  default_doc.environment_specific is not a dict, got {type(default_env_specific)}")
+            default_env_specific = {}
+        default_env = default_env_specific.get(environment, {}) if isinstance(default_env_specific, dict) else {}
 
         personalized_payload = _format_environment_payload(env_knowledge)
         default_payload = _format_environment_payload(default_env)
@@ -1673,7 +1981,20 @@ def get_environment_defaults(agent_id):
         env = agent.primary_environment
         _, default_path, _, default_doc = _ensure_environment_knowledge(agent_id, env)
         env_key = _frontend_env_key(env)
-        env_payload = _format_environment_payload(default_doc.get('environment_specific', {}).get(env, {}))
+        
+        # Ensure default_doc is a dictionary
+        if not isinstance(default_doc, dict):
+            print(f"⚠️  default_doc is not a dict, got {type(default_doc)}, resetting to empty dict")
+            default_doc = {}
+        
+        # Safely get environment-specific data
+        default_env_specific = default_doc.get('environment_specific', {})
+        if not isinstance(default_env_specific, dict):
+            print(f"⚠️  default_doc.environment_specific is not a dict, got {type(default_env_specific)}")
+            default_env_specific = {}
+        default_env_data = default_env_specific.get(env, {}) if isinstance(default_env_specific, dict) else {}
+        
+        env_payload = _format_environment_payload(default_env_data)
 
         return jsonify({
             'default_path': default_path,
@@ -1748,6 +2069,12 @@ def create_enhanced_match():
     user_id = session.get('user_id')
     if not user_id:
         return jsonify({'error': 'Not authenticated'}), 401
+
+    # Ensure database is migrated (run migration if needed)
+    try:
+        migrate_match_table()
+    except Exception as e:
+        print(f"⚠️  Migration check failed: {e}")
 
     try:
         data = request.get_json()
@@ -1913,12 +2240,118 @@ def handle_stop_game(data):
 
 
 # Database initialization
+def migrate_agent_table():
+    """Add missing columns to agent table if they don't exist"""
+    from sqlalchemy import inspect, text
+    
+    with app.app_context():
+        try:
+            inspector = inspect(db.engine)
+            # Check if agent table exists
+            if 'agent' not in inspector.get_table_names():
+                print("⚠️  Agent table doesn't exist yet, will be created by db.create_all()")
+                return
+            
+            columns = [col['name'] for col in inspector.get_columns('agent')]
+            
+            # List of all columns that should exist in the Agent model
+            required_columns = {
+                'recent_match_metrics': "TEXT DEFAULT '[]'",
+                'current_unlock_tier': "INTEGER DEFAULT 0",
+                'transferable_skills_count': "INTEGER DEFAULT 0",
+                'knowledge_transfer_success_rate': "REAL DEFAULT 0.0",
+                'cross_environment_performance': "TEXT DEFAULT '{}'",
+                'transfer_learning_maturity': "REAL DEFAULT 0.0",
+                'environments_experienced': "TEXT DEFAULT '[]'",
+                'primary_environment': "VARCHAR(50) DEFAULT 'pong'",
+                'total_wins': "INTEGER DEFAULT 0",
+                'total_losses': "INTEGER DEFAULT 0",
+                'total_training_time': "REAL DEFAULT 0.0",
+                'elo_rating': "INTEGER DEFAULT 1200",
+                'architecture_version': "VARCHAR(50) DEFAULT 'Agent Byte v2.0 - Transferable'",
+                'file_structure_version': "VARCHAR(10) DEFAULT '2.0'"
+            }
+            
+            # Add any missing columns
+            added_any = False
+            with db.engine.connect() as conn:
+                for col_name, col_def in required_columns.items():
+                    if col_name not in columns:
+                        print(f"🔄 Adding missing column: {col_name}")
+                        try:
+                            conn.execute(text(f"ALTER TABLE agent ADD COLUMN {col_name} {col_def};"))
+                            conn.commit()
+                            print(f"✅ Added {col_name} column")
+                            added_any = True
+                        except Exception as e:
+                            print(f"⚠️  Could not add {col_name}: {e}")
+            
+            if not added_any:
+                print("✅ All required columns exist")
+                
+        except Exception as e:
+            # Column might already exist or table might not exist yet
+            print(f"⚠️  Migration note: {e}")
+
+
+def migrate_match_table():
+    """Add missing columns to match table if they don't exist"""
+    from sqlalchemy import inspect, text
+    
+    with app.app_context():
+        try:
+            inspector = inspect(db.engine)
+            # Check if match table exists
+            if 'match' not in inspector.get_table_names():
+                print("⚠️  Match table doesn't exist yet, will be created by db.create_all()")
+                return
+            
+            columns = [col['name'] for col in inspector.get_columns('match')]
+            
+            # List of all columns that should exist in the Match model
+            required_columns = {
+                'performance_metrics': "TEXT DEFAULT '{}'",
+                'transfer_events_count': "INTEGER DEFAULT 0",
+                'transferable_skills_used': "INTEGER DEFAULT 0",
+                'knowledge_transfer_effectiveness': "REAL DEFAULT 0.0",
+                'match_type': "VARCHAR(20) DEFAULT 'user_vs_agent'",
+                'spectator_count': "INTEGER DEFAULT 0",
+                'tournament_id': "VARCHAR(36)",
+                'is_public': "BOOLEAN DEFAULT 1"
+            }
+            
+            # Add any missing columns
+            added_any = False
+            with db.engine.connect() as conn:
+                for col_name, col_def in required_columns.items():
+                    if col_name not in columns:
+                        print(f"🔄 Adding missing column to match table: {col_name}")
+                        try:
+                            conn.execute(text(f"ALTER TABLE match ADD COLUMN {col_name} {col_def};"))
+                            conn.commit()
+                            print(f"✅ Added {col_name} column to match table")
+                            added_any = True
+                        except Exception as e:
+                            print(f"⚠️  Could not add {col_name} to match table: {e}")
+            
+            if not added_any:
+                print("✅ All required columns exist in match table")
+                
+        except Exception as e:
+            # Column might already exist or table might not exist yet
+            print(f"⚠️  Match table migration note: {e}")
+
+
 def init_enhanced_database():
     """Initialize enhanced database with transfer learning support"""
     with app.app_context():
         try:
             db.create_all()
             print("📊 Enhanced database tables created")
+            
+            # Run migration to add any missing columns
+            migrate_agent_table()
+            migrate_match_table()
 
             # Create saas_agents directory structure
             base_dir = "../../saas_agents"
