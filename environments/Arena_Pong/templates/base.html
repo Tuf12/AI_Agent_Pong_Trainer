@@ -2062,7 +2062,7 @@ async function editAgent(agentId) {
 // Global variables
 let selectedItems = new Set();
 
-// Load basic instructions from knowledge.json
+        // Load basic instructions from pong_knowledge.json
 function loadInstructionsTab(pongKnowledge) {
     // Load primary objective
     const objective = pongKnowledge.objectives?.primary || '';
@@ -2103,7 +2103,7 @@ function loadInstructionsTab(pongKnowledge) {
     ];
     
     categories.forEach(category => {
-        // Get current items from knowledge.json
+        // Get current items from pong_knowledge.json
         const currentItems = getNestedValue(pongKnowledge, category.knowledgePath) || [];
         
         // Render as selectable knowledge list
@@ -2350,7 +2350,7 @@ async function removeSelectedKnowledge() {
     }
 }
 
-// Update knowledge category in knowledge.json structure
+        // Update knowledge category in pong_knowledge.json structure
 async function updateKnowledgeCategory(category, items) {
     if (!currentAgentId) return;
     

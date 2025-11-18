@@ -76,17 +76,18 @@
    ```
    saas_agents/user_1/agent_abc123/
    ├── core/
-   │   ├── agent_profile.json          # Agent identity, capabilities
-   │   ├── general_knowledge.json      # Abstract strategies
-   │   └── meta_learning.json          # Learning principles
+  │   ├── agent_profile.json          # Agent identity, capabilities
+  │   ├── general_knowledge.json      # Abstract strategies
+  │   └── meta_learning.json          # Learning principles
    ├── environments/
    │   ├── pong/
-   │   │   ├── network.npz             # Pong-specific network
-   │   │   ├── knowledge.json          # Pong-specific tactics
-   │   │   └── matches.json            # Pong match history (3-5 recent)
+  │   │   ├── network.npz             # Pong-specific network
+  │   │   ├── pong_knowledge.json     # User-edited Pong basics
+  │   │   ├── default_pong_knowledge.json  # Unlock/template source
+  │   │   └── matches.json            # Pong match history (3-5 recent)
    │   └── future_game/
    │       ├── network.npz
-   │       ├── knowledge.json
+  │       ├── <env>_knowledge.json
    │       └── matches.json
    └── transfers/
        ├── pong_to_future_game.json    # Transfer learning logs

@@ -417,18 +417,22 @@ class PongArenaAdapter(EnvironmentAdapter):
             # Fallback empty state
             return np.zeros(14, dtype=np.float32)
 
-    def execute_pong_action(self, action: int) -> Tuple[np.ndarray, float, bool]:
+    def execute_pong_action(self, action: int) -> Tuple[np.ndarray, float, bool, Dict[str, Any]]:
         """
         Execute action in Pong environment
 
         This delegates to the pure Pong environment while providing a consistent
         interface for Agent Byte.
+        
+        Returns:
+            Tuple containing (next_state, reward, done, info)
+            where info contains event information from the environment
         """
         if hasattr(self.pong_env, 'step'):
             return self.pong_env.step(action)
         else:
             # Fallback
-            return self.create_pong_state(), 0.0, False
+            return self.create_pong_state(), 0.0, False, {"event": "none"}
 
     def reset_pong_environment(self):
         """Reset the Pong environment through the adapter"""

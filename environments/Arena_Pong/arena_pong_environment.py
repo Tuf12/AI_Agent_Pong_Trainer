@@ -198,10 +198,22 @@ class ArenaPongEnvironment:
         """
         raise NotImplementedError("Use PongArenaAdapter for transfer learning context")
 
-    def step(self, action: int) -> Tuple[np.ndarray, float, bool]:
-        """Execute one step in the environment with enhanced analytics"""
+    def step(self, action: int) -> Tuple[np.ndarray, float, bool, Dict[str, Any]]:
+        """Execute one step in the environment with enhanced analytics
+        
+        Returns:
+            Tuple containing:
+            - next_state: np.ndarray - The next game state
+            - reward: float - The reward for this step
+            - done: bool - Whether the game is over
+            - info: dict - Dictionary containing event information with 'event' key
+        """
+        # Initialize event to "none" (default for normal steps)
+        event = "none"
+        info = {"event": event}
+        
         if not self.running or self.game_over:
-            return self.create_state(), 0.0, True
+            return self.create_state(), 0.0, True, info
 
         # Record action for analytics
         action_record = {
@@ -242,13 +254,12 @@ class ArenaPongEnvironment:
         hit_occurred = False
 
         # AI paddle collision (right side)
-        if (self.ball_x >= self.width / 2 - 30 and
-                self.ball_x <= self.width / 2 - 10 and
+        if (self.width / 2 - 30 <= self.ball_x <= self.width / 2 - 10 and
                 self.ball_dx > 0 and
-                self.ball_y >= self.ai_paddle_y - self.paddle_height / 2 and
-                self.ball_y <= self.ai_paddle_y + self.paddle_height / 2):
+                self.ai_paddle_y - self.paddle_height / 2 <= self.ball_y <= self.ai_paddle_y + self.paddle_height / 2):
 
             hit_occurred = True
+            event = "ai_hit_ball"
             self.ball_dx = -abs(self.ball_dx)
 
             # Add spin based on paddle position
@@ -278,19 +289,19 @@ class ArenaPongEnvironment:
             print(f"🎯 AI Hit! Streak: {self.success_streak}, Reward: {reward:.2f}")
 
         # Player paddle collision (left side)
-        elif (self.ball_x <= -self.width / 2 + 30 and
-              self.ball_x >= -self.width / 2 + 10 and
+        elif (-self.width / 2 + 30 >= self.ball_x >= -self.width / 2 + 10 and
               self.ball_dx < 0 and
-              self.ball_y >= self.player_paddle_y - self.paddle_height / 2 and
-              self.ball_y <= self.player_paddle_y + self.paddle_height / 2):
+              self.player_paddle_y - self.paddle_height / 2 <= self.ball_y <= self.player_paddle_y + self.paddle_height / 2):
 
             self.ball_dx = abs(self.ball_dx)
             paddle_center = self.player_paddle_y
             hit_pos = (self.ball_y - paddle_center) / (self.paddle_height / 2)
             self.ball_dy += hit_pos * 2
+            # Player hit is not an AI event, so event remains "none"
 
         # Scoring (AI scores - right side)
         elif self.ball_x <= -self.width / 2:
+            event = "ai_scored_point"
             self.ai_score += 1
             self.task_completions += 1
             reward = 3.0  # Task Completion reward
@@ -299,6 +310,7 @@ class ArenaPongEnvironment:
 
         # Player scores (left side)
         elif self.ball_x >= self.width / 2:
+            event = "ai_lost_point"
             self.player_score += 1
             self.task_failures_major += 1
             self.success_streak = 0  # Reset streak
@@ -307,10 +319,10 @@ class ArenaPongEnvironment:
             self._reset_ball()
 
         # Miss penalty (ball passed AI without hitting)
-        elif (self.ball_x > self.width / 2 - 50 and
-              self.previous_ball_x <= self.width / 2 - 50 and
+        elif (self.ball_x > self.width / 2 - 50 >= self.previous_ball_x and
               self.ball_dx > 0 and not hit_occurred):
 
+            event = "ai_miss_ball"
             self.task_failures += 1
             self.success_streak = 0
             reward = -0.5  # Task Failure penalty
@@ -345,12 +357,14 @@ class ArenaPongEnvironment:
         if self.ai_score >= self.winning_score:
             self.game_over = True
             self.winner = "Agent Byte"
+            event = "match_won"
             reward += 10.0  # Match Win bonus
             self.match_result = "ai_win"
             print(f"🏆 AI WINS! Final Score: {self.player_score}-{self.ai_score}")
         elif self.player_score >= self.winning_score:
             self.game_over = True
             self.winner = "Player"
+            event = "match_lost"
             reward -= 10.0  # Match Loss penalty
             self.match_result = "player_win"
             print(f"😞 Player wins. Final Score: {self.player_score}-{self.ai_score}")
@@ -359,7 +373,10 @@ class ArenaPongEnvironment:
         if self.match_start_time:
             self.match_duration = time.time() - self.match_start_time
 
-        return current_state, reward, self.game_over
+        # Update info dict with final event
+        info["event"] = event
+        
+        return current_state, reward, self.game_over, info
 
     def _reset_ball(self):
         """Reset ball to center with random direction"""
@@ -755,11 +772,42 @@ def test_arena_pong_context():
     return True
 
 
+def test_event_reporting():
+    """Test that environment reports events correctly"""
+    print("🧪 Testing Event Reporting (Phase 1)...")
+    
+    env = ArenaPongEnvironment(match_id="test_events", is_arena_match=True)
+    env.start_match()
+    
+    # Test normal step (should return "none")
+    state, reward, done, info = env.step(1)  # Stay action
+    assert "event" in info, "info dict must contain 'event' key"
+    assert info["event"] == "none" or info["event"] in ["ai_hit_ball", "ai_miss_ball", "ai_scored_point", "ai_lost_point"], \
+        f"Unexpected event: {info['event']}"
+    print(f"   ✅ Step 1: Event = {info['event']}")
+    
+    # Run a few steps to potentially trigger events
+    for i in range(10):
+        state, reward, done, info = env.step(1)  # Stay action
+        assert "event" in info, "info dict must always contain 'event' key"
+        assert info["event"] in ["none", "ai_hit_ball", "ai_miss_ball", "ai_scored_point", "ai_lost_point", "match_won", "match_lost"], \
+            f"Invalid event value: {info['event']}"
+        if info["event"] != "none":
+            print(f"   ✅ Step {i+2}: Event = {info['event']}")
+        if done:
+            break
+    
+    print("✅ Event reporting test passed!")
+
+
 # Example usage and testing
 if __name__ == "__main__":
     print("🧪 Testing Arena Pong Environment v2.0...")
 
     # Test context integration
     test_arena_pong_context()
+    
+    # Test event reporting (Phase 1)
+    test_event_reporting()
 
     print("✅ All tests completed successfully!")

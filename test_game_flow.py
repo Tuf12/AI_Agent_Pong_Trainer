@@ -41,7 +41,7 @@ def test_game_flow():
         action = agent.get_action(raw_state)
         
         # Execute action in environment
-        next_state, reward, done = env.step(action)
+        next_state, reward, done, info = env.step(action)
         
         # Agent learns
         agent.learn(reward, next_state, done)

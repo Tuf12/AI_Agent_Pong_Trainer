@@ -352,7 +352,7 @@ class AgentArenaSession:
     def _process_enhanced_battle_physics(self):
         """Process ball physics and return enhanced rewards for both agents"""
         # Use the environment's step function but with dual agent context
-        _, base_reward, _ = self.env.step(0)  # Dummy action since we handle movement separately
+        _, base_reward, _, _ = self.env.step(0)  # Dummy action since we handle movement separately
 
         # Calculate rewards based on actual game events
         reward1 = 0.0

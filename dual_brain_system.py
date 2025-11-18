@@ -5,6 +5,7 @@ import os
 import random
 from datetime import datetime
 from collections import defaultdict, deque
+from copy import deepcopy
 import numpy as np
 from typing import Dict, List, Any, Optional, Tuple
 
@@ -421,10 +422,16 @@ class EnhancedAgentBrain:
 class EnhancedAgentKnowledge:
     """Enhanced Symbolic Knowledge with Persistent Environment Understanding"""
 
-    def __init__(self, agent_id: str, environment_id: str, knowledge_file: str):
+    def __init__(self, agent_id: str, environment_id: str, knowledge_file: str,
+                 canonical_knowledge_file: Optional[str] = None,
+                 default_knowledge_file: Optional[str] = None):
         self.agent_id = agent_id
         self.environment_id = environment_id
         self.knowledge_file = knowledge_file
+        self.canonical_knowledge_file = canonical_knowledge_file or knowledge_file
+        self.default_knowledge_file = default_knowledge_file
+        self.canonical_knowledge = self._create_canonical_template()
+        self.default_template = None
 
         # Initialize enhanced symbolic decision maker with neural integration
         self.symbolic_decision_maker = EnhancedSymbolicDecisionMaker()
@@ -432,63 +439,11 @@ class EnhancedAgentKnowledge:
 
         # Enhanced multi-environment knowledge structure with environment profiles
         self.knowledge = {
-            "general_knowledge": {
-                "transferable_strategies": [],
-                "meta_learning_principles": [],
-                "cross_environment_patterns": [],
-                "abstract_concepts": [],
-                "neural_symbolic_correlations": []
-            },
+            "general_knowledge": self._create_general_knowledge_section(),
             "environment_specific": {
-                environment_id: {
-                    # 🚀 NEW: Permanent environment understanding
-                    "environment_profile": {
-                        "environment_id": environment_id,
-                        "display_name": self._get_environment_display_name(environment_id),
-                        "environment_type": "unknown",
-                        "understanding_level": "basic",
-                        "total_sessions": 0,
-                        "first_encountered": time.time(),
-                        "last_updated": time.time()
-                    },
-                    
-                    # 🧠 NEW: Core environment knowledge
-                    "objectives": {
-                        "primary": "",
-                        "secondary": [],
-                        "victory_conditions": [],
-                        "failure_conditions": []
-                    },
-                    
-                    "rules": {
-                        "core_mechanics": [],
-                        "constraints": [],
-                        "scoring": [],
-                        "special_conditions": []
-                    },
-                    
-                    "strategic_framework": {
-                        "core_skills_required": [],
-                        "winning_strategies": [],
-                        "success_patterns": [],
-                        "failure_patterns": [],
-                        "recommended_focus": []
-                    },
-                    
-                    # ✅ Keep existing agent-learned content
-                    "strategies": [],
-                    "lessons": [],
-                    "tactical_knowledge": [],
-                    "performance_patterns": [],
-                    "neural_insights": []
-                }
+                environment_id: self._build_environment_structure(environment_id)
             },
-            "transfer_mappings": {
-                "strategy_abstractions": {},
-                "concept_translations": {},
-                "success_patterns": [],
-                "neural_pattern_mappings": {}
-            },
+            "transfer_mappings": self._create_transfer_mapping_section(),
             "symbolic_decision_history": [],
             "metadata": {
                 "version": "2.2.0 - Persistent Environment Knowledge",
@@ -502,10 +457,193 @@ class EnhancedAgentKnowledge:
             }
         }
 
-        # Load existing knowledge
+        # Load existing knowledge and canonical corpus
         self.load_knowledge()
+        self._load_canonical_knowledge()
+        self._load_default_template()
 
         print(f"🧩 Enhanced Agent Knowledge initialized with Environment Profile Integration")
+
+    def _create_general_knowledge_section(self) -> Dict[str, Any]:
+        return {
+            "transferable_strategies": [],
+            "meta_learning_principles": [],
+            "cross_environment_patterns": [],
+            "abstract_concepts": [],
+            "neural_symbolic_correlations": []
+        }
+
+    def _create_transfer_mapping_section(self) -> Dict[str, Any]:
+        return {
+            "strategy_abstractions": {},
+            "concept_translations": {},
+            "success_patterns": [],
+            "neural_pattern_mappings": {}
+        }
+
+    def _create_progression_block(self, unlock_defs: Optional[List[Dict[str, Any]]] = None) -> Dict[str, Any]:
+        return {
+            "metrics": {
+                "matches_played": 0,
+                "wins": 0,
+                "cumulative_reward": 0.0,
+                "best_pattern_stability": 0.0,
+                "best_symbolic_coherence": 0.0,
+                "last_reward": 0.0
+            },
+            "unlocked": [],
+            "unlock_history": [],
+            "last_unlock_at": None,
+            "unlock_definitions": unlock_defs or []
+        }
+
+    def _build_environment_structure(self, environment_id: str) -> Dict[str, Any]:
+        return {
+            "environment_profile": {
+                "environment_id": environment_id,
+                "display_name": self._get_environment_display_name(environment_id),
+                "environment_type": "unknown",
+                "understanding_level": "basic",
+                "total_sessions": 0,
+                "first_encountered": time.time(),
+                "last_updated": time.time()
+            },
+            "objectives": {
+                "primary": "",
+                "secondary": [],
+                "victory_conditions": [],
+                "failure_conditions": []
+            },
+            "rules": {
+                "core_mechanics": [],
+                "constraints": [],
+                "scoring": [],
+                "special_conditions": []
+            },
+            "strategic_framework": {
+                "core_skills_required": [],
+                "winning_strategies": [],
+                "success_patterns": [],
+                "failure_patterns": [],
+                "recommended_focus": []
+            },
+            "strategies": [],
+            "lessons": [],
+            "tactical_knowledge": [],
+            "performance_patterns": [],
+            "neural_insights": [],
+            "experiment_logs": [],
+            "knowledge_unlocks": [],
+            "knowledge_progression": self._create_progression_block()
+        }
+
+    def _create_canonical_template(self) -> Dict[str, Any]:
+        return {
+            "general_knowledge": self._create_general_knowledge_section(),
+            "environment_specific": {},
+            "transfer_mappings": self._create_transfer_mapping_section(),
+            "symbolic_decision_history": [],
+            "experiment_logs": [],
+            "metadata": {
+                "version": "2.2.0 - Canonical Knowledge Corpus",
+                "agent_id": self.agent_id,
+                "environments": [],
+                "created": datetime.now().isoformat(),
+                "last_updated": datetime.now().isoformat()
+            }
+        }
+
+    def _load_canonical_knowledge(self):
+        try:
+            if self.canonical_knowledge_file and os.path.exists(self.canonical_knowledge_file):
+                with open(self.canonical_knowledge_file, 'r') as f:
+                    self.canonical_knowledge = json.load(f)
+            else:
+                # Ensure directory exists before first save
+                if self.canonical_knowledge_file:
+                    os.makedirs(os.path.dirname(self.canonical_knowledge_file), exist_ok=True)
+                self.canonical_knowledge = self._create_canonical_template()
+                self._save_canonical_knowledge()
+        except Exception as e:
+            print(f"⚠️ Could not load canonical knowledge corpus: {e}")
+            self.canonical_knowledge = self._create_canonical_template()
+
+        self._link_canonical_sections()
+        self._sync_environment_to_canonical(initial=True)
+
+    def _save_canonical_knowledge(self):
+        try:
+            if not self.canonical_knowledge_file:
+                return
+            os.makedirs(os.path.dirname(self.canonical_knowledge_file), exist_ok=True)
+            self.canonical_knowledge['metadata']['last_updated'] = datetime.now().isoformat()
+            with open(self.canonical_knowledge_file, 'w') as f:
+                json.dump(self.canonical_knowledge, f, indent=2)
+        except Exception as e:
+            print(f"⚠️ Could not save canonical knowledge corpus: {e}")
+
+    def _link_canonical_sections(self):
+        """Ensure general sections reference canonical corpus."""
+        canonical_general = self.canonical_knowledge.setdefault('general_knowledge', self._create_general_knowledge_section())
+        self.knowledge['general_knowledge'] = canonical_general
+
+        canonical_transfer = self.canonical_knowledge.setdefault('transfer_mappings', self._create_transfer_mapping_section())
+        self.knowledge['transfer_mappings'] = canonical_transfer
+
+        canonical_decisions = self.canonical_knowledge.setdefault('symbolic_decision_history', [])
+        self.knowledge['symbolic_decision_history'] = canonical_decisions
+
+    def _load_default_template(self):
+        if not self.default_knowledge_file:
+            self.default_template = deepcopy(self.knowledge)
+            return
+
+        try:
+            if os.path.exists(self.default_knowledge_file):
+                with open(self.default_knowledge_file, 'r') as f:
+                    self.default_template = json.load(f)
+            else:
+                self.default_template = deepcopy(self.knowledge)
+                self._save_default_template()
+        except Exception as e:
+            print(f"⚠️ Could not load default environment knowledge: {e}")
+            self.default_template = deepcopy(self.knowledge)
+
+    def _save_default_template(self):
+        if not self.default_knowledge_file or self.default_template is None:
+            return
+        try:
+            os.makedirs(os.path.dirname(self.default_knowledge_file), exist_ok=True)
+            self.default_template.setdefault('metadata', {})['last_updated'] = datetime.now().isoformat()
+            with open(self.default_knowledge_file, 'w') as f:
+                json.dump(self.default_template, f, indent=2)
+        except Exception as e:
+            print(f"⚠️ Could not save default environment knowledge: {e}")
+
+    def _get_default_env_entry(self) -> Optional[Dict[str, Any]]:
+        if self.default_template is None:
+            return None
+        envs = self.default_template.setdefault('environment_specific', {})
+        if self.environment_id not in envs:
+            envs[self.environment_id] = deepcopy(self.knowledge['environment_specific'][self.environment_id])
+        return envs[self.environment_id]
+
+    def _sync_environment_to_canonical(self, initial: bool = False):
+        if not self.canonical_knowledge_file:
+            return
+
+        env_data = self.knowledge['environment_specific'][self.environment_id]
+        canonical_envs = self.canonical_knowledge.setdefault('environment_specific', {})
+        canonical_envs[self.environment_id] = env_data
+
+        metadata_envs = self.canonical_knowledge['metadata'].setdefault('environments', [])
+        if self.environment_id not in metadata_envs:
+            metadata_envs.append(self.environment_id)
+
+        if not initial:
+            self._save_canonical_knowledge()
+        elif not os.path.exists(self.canonical_knowledge_file):
+            self._save_canonical_knowledge()
 
     def _get_environment_display_name(self, environment_id: str) -> str:
         """Get human-readable name for environment"""
@@ -618,6 +756,12 @@ class EnhancedAgentKnowledge:
                 })
                 
                 env_knowledge['strategic_framework'] = framework
+
+            # 📈 Capture unlock definitions for progression system
+            if 'knowledge_unlocks' in env_context:
+                env_knowledge['knowledge_unlocks'] = env_context.get('knowledge_unlocks', [])
+                progression = self._ensure_progression_structure(env_knowledge)
+                progression['unlock_definitions'] = env_knowledge['knowledge_unlocks']
 
             # 🔄 Add transferable skills to environment
             if 'transferable_skills' in env_context:
@@ -816,26 +960,201 @@ class EnhancedAgentKnowledge:
     def _create_new_environment_entry(self, environment_id: str):
         """Create new environment entry in knowledge structure"""
         if environment_id not in self.knowledge['environment_specific']:
-            self.knowledge['environment_specific'][environment_id] = {
-                "environment_profile": {
-                    "environment_id": environment_id,
-                    "display_name": self._get_environment_display_name(environment_id),
-                    "environment_type": "unknown",
-                    "understanding_level": "basic",
-                    "total_sessions": 0,
-                    "first_encountered": time.time(),
-                    "last_updated": time.time()
-                },
-                "objectives": {},
-                "rules": {},
-                "strategic_framework": {},
-                "strategies": [],
-                "lessons": [],
-                "tactical_knowledge": [],
-                "performance_patterns": [],
-                "neural_insights": []
-            }
+            self.knowledge['environment_specific'][environment_id] = self._build_environment_structure(environment_id)
             print(f"🆕 Created new environment entry for {environment_id}")
+        else:
+            env_knowledge = self.knowledge['environment_specific'][environment_id]
+            # Backfill new fields if missing
+            env_knowledge.setdefault('experiment_logs', [])
+            env_knowledge.setdefault('knowledge_unlocks', [])
+            env_knowledge.setdefault(
+                'knowledge_progression',
+                self._create_progression_block(env_knowledge.get('knowledge_unlocks', []))
+            )
+
+    def _ensure_progression_structure(self, env_knowledge: Dict[str, Any]) -> Dict[str, Any]:
+        progression = env_knowledge.get('knowledge_progression')
+        if not progression:
+            progression = self._create_progression_block(env_knowledge.get('knowledge_unlocks', []))
+            env_knowledge['knowledge_progression'] = progression
+
+        metrics = progression.setdefault('metrics', {
+            "matches_played": 0,
+            "wins": 0,
+            "cumulative_reward": 0.0,
+            "best_pattern_stability": 0.0,
+            "best_symbolic_coherence": 0.0,
+            "last_reward": 0.0
+        })
+
+        # Ensure all metric keys exist
+        for key in ["matches_played", "wins", "cumulative_reward", "best_pattern_stability",
+                    "best_symbolic_coherence", "last_reward"]:
+            metrics.setdefault(key, 0 if 'reward' not in key else 0.0)
+
+        progression.setdefault('unlocked', [])
+        progression.setdefault('unlock_history', [])
+        progression.setdefault('last_unlock_at', None)
+        progression.setdefault('unlock_definitions', env_knowledge.get('knowledge_unlocks', []))
+
+        # Ensure default template has a matching environment entry
+        self._get_default_env_entry()
+
+        return progression
+
+    def update_environment_progression(self, outcome: Dict[str, Any]):
+        """Update knowledge progression metrics and unlock new knowledge when thresholds are met."""
+        try:
+            env_knowledge = self.knowledge['environment_specific'][self.environment_id]
+            progression = self._ensure_progression_structure(env_knowledge)
+            metrics = progression['metrics']
+
+            metrics['matches_played'] += 1
+            if outcome.get('win'):
+                metrics['wins'] += 1
+
+            reward = outcome.get('reward', 0.0) or 0.0
+            metrics['cumulative_reward'] += reward
+            metrics['last_reward'] = reward
+
+            pattern_stability = outcome.get('pattern_stability', 0.0) or 0.0
+            metrics['best_pattern_stability'] = max(metrics.get('best_pattern_stability', 0.0), pattern_stability)
+
+            symbolic_coherence = outcome.get('symbolic_coherence', 0.0) or 0.0
+            metrics['best_symbolic_coherence'] = max(metrics.get('best_symbolic_coherence', 0.0), symbolic_coherence)
+
+            progression['last_update'] = datetime.now().isoformat()
+            self._apply_unlocks(env_knowledge, progression)
+            self._sync_environment_to_canonical()
+
+        except Exception as e:
+            print(f"⚠️ Unable to update knowledge progression: {e}")
+
+    def record_experiment_outcome(self, experiment: Dict[str, Any]):
+        """Record symbolic/neural experiment outcomes for dataset-ready tracing."""
+        try:
+            env_knowledge = self.knowledge['environment_specific'][self.environment_id]
+            experiment_entry = {
+                'timestamp': experiment.get('timestamp', time.time()),
+                'environment': experiment.get('environment', self.environment_id),
+                'strategy': experiment.get('strategy'),
+                'decision_type': experiment.get('decision_type'),
+                'reward': experiment.get('reward', 0.0),
+                'success': bool(experiment.get('success')),
+                'expert_choice': experiment.get('expert_choice'),
+                'notes': experiment.get('notes')
+            }
+
+            env_logs = env_knowledge.setdefault('experiment_logs', [])
+            env_logs.append(experiment_entry)
+            if len(env_logs) > 200:
+                env_knowledge['experiment_logs'] = env_logs[-200:]
+
+            canonical_logs = self.canonical_knowledge.setdefault('experiment_logs', [])
+            canonical_logs.append(experiment_entry)
+            if len(canonical_logs) > 2000:
+                self.canonical_knowledge['experiment_logs'] = canonical_logs[-2000:]
+
+            self._sync_environment_to_canonical()
+        except Exception as e:
+            print(f"⚠️ Unable to log experiment outcome: {e}")
+
+    def _apply_unlocks(self, env_knowledge: Dict[str, Any], progression: Dict[str, Any]):
+        unlocks = progression.get('unlock_definitions', [])
+        unlocked_ids = progression.setdefault('unlocked', [])
+
+        for unlock in unlocks:
+            unlock_id = unlock.get('id')
+            if not unlock_id or unlock_id in unlocked_ids:
+                continue
+
+            requirements = unlock.get('requirements', {})
+            if not self._requirements_met(requirements, progression['metrics']):
+                continue
+
+            self._merge_unlock_grants(env_knowledge, unlock.get('grants', {}))
+            unlocked_ids.append(unlock_id)
+            history = progression.setdefault('unlock_history', [])
+            history.append({
+                'id': unlock_id,
+                'timestamp': datetime.now().isoformat(),
+                'metrics': deepcopy(progression['metrics'])
+            })
+            progression['last_unlock_at'] = datetime.now().isoformat()
+            print(f"🔓 Unlocked new knowledge tier '{unlock_id}' for {self.environment_id}")
+
+    def _requirements_met(self, requirements: Dict[str, Any], metrics: Dict[str, Any]) -> bool:
+        if not requirements:
+            return True
+
+        if 'wins' in requirements and metrics.get('wins', 0) < requirements['wins']:
+            return False
+        if 'matches_played' in requirements and metrics.get('matches_played', 0) < requirements['matches_played']:
+            return False
+        if 'cumulative_reward' in requirements and metrics.get('cumulative_reward', 0.0) < requirements['cumulative_reward']:
+            return False
+        if 'pattern_stability' in requirements and metrics.get('best_pattern_stability', 0.0) < requirements['pattern_stability']:
+            return False
+        if 'symbolic_coherence' in requirements and metrics.get('best_symbolic_coherence', 0.0) < requirements['symbolic_coherence']:
+            return False
+        return True
+
+    def _merge_unlock_grants(self, env_knowledge: Dict[str, Any], grants: Dict[str, Any]):
+        if not grants:
+            return
+
+        self._apply_grants_to_env(env_knowledge, grants)
+        self._merge_grants_into_default(grants)
+
+    def _apply_grants_to_env(self, env_knowledge: Dict[str, Any], grants: Dict[str, Any]):
+        if 'rules' in grants:
+            env_rules = env_knowledge.setdefault('rules', {})
+            for key, values in grants['rules'].items():
+                env_rules.setdefault(key, [])
+                for value in values:
+                    self._append_unique(env_rules[key], value)
+
+        if 'objectives' in grants:
+            env_objectives = env_knowledge.setdefault('objectives', {})
+            for key, values in grants['objectives'].items():
+                if isinstance(values, list):
+                    env_objectives.setdefault(key, [])
+                    for value in values:
+                        self._append_unique(env_objectives[key], value)
+                else:
+                    env_objectives[key] = values
+
+        if 'strategic_framework' in grants:
+            env_framework = env_knowledge.setdefault('strategic_framework', {})
+            for key, values in grants['strategic_framework'].items():
+                env_framework.setdefault(key, [])
+                for value in values:
+                    self._append_unique(env_framework[key], value)
+
+        if 'learning_recommendations' in grants:
+            env_learning = env_knowledge.setdefault('learning_recommendations', {})
+            for key, values in grants['learning_recommendations'].items():
+                env_learning.setdefault(key, [])
+                for value in values:
+                    self._append_unique(env_learning[key], value)
+
+    def _merge_grants_into_default(self, grants: Dict[str, Any]):
+        if not self.default_template or not self.default_knowledge_file or not grants:
+            return
+
+        default_env = self._get_default_env_entry()
+        if not default_env:
+            return
+
+        self._apply_grants_to_env(default_env, grants)
+        self._save_default_template()
+
+    @staticmethod
+    def _append_unique(collection: List[Any], value: Any):
+        if value is None:
+            return
+        if value not in collection:
+            collection.append(value)
 
     def integrate_neural_insights(self, neural_insights: Dict[str, Any]):
         """Integrate insights from the neural brain into symbolic knowledge"""
@@ -1080,15 +1399,21 @@ class EnhancedAgentKnowledge:
                     self.knowledge['metadata']['environments'] = envs
 
                 print(f"🧩 Enhanced knowledge loaded with environment profile integration")
+                env_entry = self.knowledge['environment_specific'][self.environment_id]
+                self._ensure_progression_structure(env_entry)
                 return True
             else:
                 print(f"🆕 No existing knowledge found, starting fresh with environment profiles")
                 self._create_new_environment_entry(self.environment_id)
+                env_entry = self.knowledge['environment_specific'][self.environment_id]
+                self._ensure_progression_structure(env_entry)
                 return False
 
         except Exception as e:
             print(f"❌ Error loading enhanced knowledge: {e}")
             self._create_new_environment_entry(self.environment_id)
+            env_entry = self.knowledge['environment_specific'][self.environment_id]
+            self._ensure_progression_structure(env_entry)
             return False
 
 
@@ -1106,6 +1431,7 @@ class EnhancedAgentKnowledge:
 
             print(
                 f"🧩 Enhanced knowledge saved: {neural_correlations} neural correlations, {decisions_tracked} decisions tracked")
+            self._sync_environment_to_canonical()
             return True
 
         except Exception as e:
@@ -1183,7 +1509,9 @@ class EnhancedDualBrainAgent:
     """Enhanced Dual Brain System with Neural-Symbolic Integration and Transfer Learning"""
 
     def __init__(self, agent_id: str = None, environment_id: str = "unknown",
-                 brain_file: str = None, knowledge_file: str = None):
+                 brain_file: str = None, knowledge_file: str = None,
+                 canonical_knowledge_file: Optional[str] = None,
+                 default_knowledge_file: Optional[str] = None):
 
         # Handle backwards compatibility
         if agent_id is None:
@@ -1195,13 +1523,32 @@ class EnhancedDualBrainAgent:
         if brain_file is None:
             brain_file = f"saas_agents/{agent_id}/environments/{environment_id}/brain.json"
         if knowledge_file is None:
-            knowledge_file = f"saas_agents/{agent_id}/environments/{environment_id}/knowledge.json"
+            knowledge_file = f"saas_agents/{agent_id}/environments/{environment_id}/{environment_id}_knowledge.json"
+
+        if canonical_knowledge_file is None:
+            env_dir = os.path.dirname(knowledge_file)
+            agent_root = os.path.dirname(os.path.dirname(env_dir)) if env_dir else ""
+            if agent_root:
+                canonical_knowledge_file = os.path.join(agent_root, "core", "knowledge.json")
+            else:
+                canonical_knowledge_file = knowledge_file
+
+        if default_knowledge_file is None:
+            env_dir = os.path.dirname(knowledge_file)
+            default_knowledge_file = os.path.join(
+                env_dir, f"default_{environment_id}_knowledge.json") if env_dir else knowledge_file
 
         # Initialize enhanced dual brain system
         self.agent_id = agent_id
         self.environment_id = environment_id
         self.brain = EnhancedAgentBrain(agent_id, environment_id, brain_file)
-        self.knowledge = EnhancedAgentKnowledge(agent_id, environment_id, knowledge_file)
+        self.knowledge = EnhancedAgentKnowledge(
+            agent_id,
+            environment_id,
+            knowledge_file,
+            canonical_knowledge_file=canonical_knowledge_file,
+            default_knowledge_file=default_knowledge_file
+        )
 
         # Current session state
         self.current_app = None

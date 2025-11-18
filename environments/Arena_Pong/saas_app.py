@@ -9,8 +9,10 @@ import time
 import threading
 import uuid
 import os
+import shutil
 from datetime import datetime, timezone
 from typing import Dict, Optional, List, Any
+from copy import deepcopy
 
 # Import enhanced Agent Byte components
 import sys
@@ -18,9 +20,12 @@ import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
 from agent_byte import AgentByte
 from adapters.pong_arena_adapter import PongArenaAdapter
-
+from data_pipeline.dataset_builder import build_and_export_dataset
+                                    
 # Updated to use Arena Pong Environment v2.0 with 256-dimension support
 from arena_pong_environment import ArenaPongEnvironment
+from pong_decision_logger import PongDecisionLogger
+from pong_toolbox import PongToolbox
 
 # Flask setup
 app = Flask(__name__)
@@ -34,6 +39,9 @@ bcrypt = Bcrypt(app)
 socketio = SocketIO(app, cors_allowed_origins="*")
 CORS(app)
 
+DATASET_EXPORT_DIR = os.path.join(os.path.dirname(__file__), 'dataset_exports')
+os.makedirs(DATASET_EXPORT_DIR, exist_ok=True)
+
 # Global game sessions
 active_games: Dict[str, 'GameSession'] = {}
 
@@ -43,7 +51,7 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(128), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.now(timezone.utc))
     subscription_tier = db.Column(db.String(20), default='free')
 
     # Enhanced user metrics
@@ -53,6 +61,7 @@ class User(db.Model):
 
     agents = db.relationship('Agent', backref='owner', lazy=True, cascade='all, delete-orphan')
     matches = db.relationship('Match', foreign_keys='Match.user_id', backref='user', lazy=True)
+
 
     def to_dict(self):
         return {
@@ -213,6 +222,375 @@ class Match(db.Model):
         }
 
 
+class UserPreferenceSnapshot(db.Model):
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.now(timezone.utc))
+    preferences = db.Column(db.Text, default='{}')  # JSON blob describing control scheme, ux prefs, etc.
+    learning_goals = db.Column(db.Text, default='[]')  # JSON list of goal objects
+    agent_focus = db.Column(db.Text, default='[]')  # JSON list of agent identifiers/styles
+    notes = db.Column(db.Text)
+
+    user = db.relationship('User', backref=db.backref('preference_snapshots', lazy=True, cascade='all, delete-orphan'))
+
+    def to_dict(self):
+        def _safe_load(payload, default):
+            try:
+                return json.loads(payload) if payload else default
+            except Exception:
+                return default
+
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'created_at': self.created_at.isoformat(),
+            'preferences': _safe_load(self.preferences, {}),
+            'learning_goals': _safe_load(self.learning_goals, []),
+            'agent_focus': _safe_load(self.agent_focus, []),
+            'notes': self.notes or ''
+        }
+
+
+class AgentConfigSnapshot(db.Model):
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    agent_id = db.Column(db.String(36), db.ForeignKey('agent.id'), nullable=False)
+    match_id = db.Column(db.String(36), db.ForeignKey('match.id'))
+    created_at = db.Column(db.DateTime, default=datetime.now(timezone.utc))
+    config_data = db.Column(db.Text, default='{}')
+    decision_agent_config = db.Column(db.Text, default='{}')
+
+    agent = db.relationship('Agent', backref=db.backref('config_snapshots', lazy=True, cascade='all, delete-orphan'))
+
+    def to_dict(self):
+        def _safe_load(payload):
+            try:
+                return json.loads(payload) if payload else {}
+            except Exception:
+                return {}
+
+        return {
+            'id': self.id,
+            'agent_id': self.agent_id,
+            'match_id': self.match_id,
+            'created_at': self.created_at.isoformat(),
+            'config_data': _safe_load(self.config_data),
+            'decision_agent_config': _safe_load(self.decision_agent_config)
+        }
+
+
+class TrajectoryRun(db.Model):
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    match_id = db.Column(db.String(36), db.ForeignKey('match.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    agent_id = db.Column(db.String(36), db.ForeignKey('agent.id'), nullable=False)
+    environment = db.Column(db.String(50), default='pong')
+    created_at = db.Column(db.DateTime, default=datetime.now(timezone.utc))
+    completed_at = db.Column(db.DateTime)
+    total_steps = db.Column(db.Integer, default=0)
+    total_reward = db.Column(db.Float, default=0.0)
+    run_metadata = db.Column('metadata', db.Text, default='{}')
+    agent_config_snapshot_id = db.Column(db.String(36), db.ForeignKey('agent_config_snapshot.id'))
+    user_pref_snapshot_id = db.Column(db.String(36), db.ForeignKey('user_preference_snapshot.id'))
+
+    steps = db.relationship('TrajectoryStep', backref='run', lazy=True, cascade='all, delete-orphan')
+
+    def to_dict(self, include_steps: bool = False):
+        try:
+            metadata = json.loads(self.run_metadata) if self.run_metadata else {}
+        except Exception:
+            metadata = {}
+
+        data = {
+            'id': self.id,
+            'match_id': self.match_id,
+            'user_id': self.user_id,
+            'agent_id': self.agent_id,
+            'environment': self.environment,
+            'created_at': self.created_at.isoformat(),
+            'completed_at': self.completed_at.isoformat() if self.completed_at else None,
+            'total_steps': self.total_steps,
+            'total_reward': self.total_reward,
+            'metadata': metadata,
+            'agent_config_snapshot_id': self.agent_config_snapshot_id,
+            'user_pref_snapshot_id': self.user_pref_snapshot_id
+        }
+
+        if include_steps:
+            data['steps'] = [step.to_dict() for step in self.steps]
+        return data
+
+
+class TrajectoryStep(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    run_id = db.Column(db.String(36), db.ForeignKey('trajectory_run.id'), nullable=False)
+    step_index = db.Column(db.Integer, nullable=False)
+    timestamp = db.Column(db.DateTime, default=datetime.now(timezone.utc))
+    state_vector = db.Column(db.Text, nullable=False)  # JSON encoded list
+    next_state_vector = db.Column(db.Text)
+    normalized_state_vector = db.Column(db.Text)
+    normalized_next_state_vector = db.Column(db.Text)
+    action = db.Column(db.Integer)
+    reward = db.Column(db.Float)
+    done = db.Column(db.Boolean, default=False)
+    expert_choice = db.Column(db.Integer)
+    rule_action = db.Column(db.Integer)
+    ddqn_action = db.Column(db.Integer)
+    step_metadata = db.Column('metadata', db.Text, default='{}')
+
+    def to_dict(self):
+        def _safe_load(payload):
+            try:
+                return json.loads(payload) if payload else None
+            except Exception:
+                return None
+
+        return {
+            'id': self.id,
+            'run_id': self.run_id,
+            'step_index': self.step_index,
+            'timestamp': self.timestamp.isoformat(),
+            'state_vector': _safe_load(self.state_vector),
+            'next_state_vector': _safe_load(self.next_state_vector),
+            'normalized_state_vector': _safe_load(self.normalized_state_vector),
+            'normalized_next_state_vector': _safe_load(self.normalized_next_state_vector),
+            'action': self.action,
+            'reward': self.reward,
+            'done': self.done,
+            'expert_choice': self.expert_choice,
+            'rule_action': self.rule_action,
+            'ddqn_action': self.ddqn_action,
+            'metadata': _safe_load(self.step_metadata) or {}
+        }
+
+
+def _get_env_knowledge_paths(agent_id: str, environment: str):
+    env_dir = os.path.join("saas_agents", agent_id, "environments", environment)
+    personalized = os.path.join(env_dir, f"{environment}_knowledge.json")
+    default_template = os.path.join(env_dir, f"default_{environment}_knowledge.json")
+    legacy = os.path.join(env_dir, "knowledge.json")
+    return env_dir, personalized, default_template, legacy
+
+
+def _read_json_file(path: str, fallback: Optional[Dict] = None) -> Dict:
+    try:
+        if os.path.exists(path):
+            with open(path, 'r') as f:
+                return json.load(f)
+    except Exception as e:
+        print(f"⚠️ Could not read JSON file {path}: {e}")
+    return fallback.copy() if fallback else {}
+
+
+def _write_json_file(path: str, data: Dict):
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, 'w') as f:
+            json.dump(data, f, indent=2)
+    except Exception as e:
+        print(f"❌ Could not write JSON file {path}: {e}")
+
+
+def _load_environment_context(environment: str) -> Dict[str, Any]:
+    if environment in ['pong', 'arena_pong']:
+        from arena_pong_environment import ArenaPongEnvironment
+        temp_env = ArenaPongEnvironment(match_id="context_builder")
+        return temp_env.get_env_context()
+    return {}
+
+
+def _build_environment_block(environment: str, env_context: Dict[str, Any]) -> Dict[str, Any]:
+    objective = env_context.get('objective', {})
+    rules = env_context.get('rules', {})
+    strategic = env_context.get('strategic_concepts', {})
+    learning = env_context.get('learning_recommendations', {})
+    reward_structure = {
+        "ball_hit": 1.0,
+        "ball_miss": -0.5,
+        "score_point": 3.0,
+        "concede_point": -0.5,
+        "match_win": 10.0,
+        "match_loss": -10.0
+    }
+
+    return {
+        "environment_profile": {
+            "environment_id": environment,
+            "display_name": env_context.get('display_name', 'Arena Pong'),
+            "environment_type": env_context.get('environment_type', 'competitive_real_time'),
+            "understanding_level": "basic",
+            "total_sessions": 0,
+            "first_encountered": time.time(),
+            "last_updated": time.time()
+        },
+        "objectives": {
+            "primary": objective.get('primary', 'Score 21 points before opponent'),
+            "secondary": objective.get('secondary', []),
+            "victory_conditions": objective.get('victory_conditions', []),
+            "failure_conditions": objective.get('failure_conditions', [])
+        },
+        "rules": {
+            "core_mechanics": rules.get('core_mechanics', env_context.get('rules', [])),
+            "constraints": rules.get('constraints', []),
+            "scoring": rules.get('scoring', []),
+            "special_conditions": rules.get('special_conditions', []),
+            "game_mechanics": env_context.get('game_mechanics', {})
+        },
+        "strategic_framework": {
+            "core_skills_required": strategic.get('core_skills', []),
+            "tactical_approaches": strategic.get('tactical_approaches', []),
+            "success_patterns": strategic.get('success_patterns', []),
+            "failure_patterns": strategic.get('failure_patterns', []),
+            "recommended_focus": strategic.get('recommended_focus', [])
+        },
+        "transferable_skills": env_context.get('transferable_skills', []),
+        "learning_recommendations": learning,
+        "reward_structure": reward_structure,
+        "learning_parameters": {
+            "learning_rate": 0.001,
+            "exploration_rate": 0.3,
+            "discount_factor": 0.99
+        },
+        "strategies": [],
+        "lessons": [],
+        "tactical_knowledge": [],
+        "performance_patterns": [],
+        "neural_insights": [],
+        "knowledge_unlocks": env_context.get('knowledge_unlocks', []),
+        "experiment_logs": []
+    }
+
+
+def _base_knowledge_document(agent_id: str, environment: str, env_context: Dict[str, Any]) -> Dict[str, Any]:
+    env_block = _build_environment_block(environment, env_context)
+    env_block['knowledge_progression'] = {
+        "metrics": {
+            "matches_played": 0,
+            "wins": 0,
+            "cumulative_reward": 0.0,
+            "best_pattern_stability": 0.0,
+            "best_symbolic_coherence": 0.0,
+            "last_reward": 0.0
+        },
+        "unlocked": [],
+        "unlock_history": [],
+        "last_unlock_at": None,
+        "unlock_definitions": env_block.get('knowledge_unlocks', [])
+    }
+
+    return {
+        "general_knowledge": {
+            "transferable_strategies": [],
+            "meta_learning_principles": [],
+            "cross_environment_patterns": [],
+            "abstract_concepts": [],
+            "neural_symbolic_correlations": []
+        },
+        "environment_specific": {
+            environment: env_block
+        },
+        "transfer_mappings": {
+            "strategy_abstractions": {},
+            "concept_translations": {},
+            "success_patterns": [],
+            "neural_pattern_mappings": {}
+        },
+        "symbolic_decision_history": [],
+        "metadata": {
+            "version": "2.3.0 - Environment Knowledge Refactor",
+            "agent_id": agent_id,
+            "environments": [environment],
+            "created": datetime.now().isoformat(),
+            "last_updated": datetime.now().isoformat(),
+            "transfer_learning_enabled": True,
+            "neural_symbolic_integration": True,
+            "environment_knowledge_integration": True
+        }
+    }
+
+
+def _build_minimal_personalized_document(agent_id: str, environment: str,
+                                         env_context: Dict[str, Any],
+                                         default_doc: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    doc = deepcopy(default_doc) if default_doc else _base_knowledge_document(agent_id, environment, env_context)
+    env_block = doc['environment_specific'][environment]
+
+    env_block['objectives']['secondary'] = []
+    env_block['objectives']['victory_conditions'] = env_block['objectives'].get('victory_conditions', [])[:1]
+    env_block['objectives']['failure_conditions'] = env_block['objectives'].get('failure_conditions', [])[:1]
+
+    core_mechanics = env_block['rules'].get('core_mechanics', [])
+    env_block['rules']['core_mechanics'] = core_mechanics[:3] if core_mechanics else core_mechanics
+    env_block['rules']['constraints'] = []
+    env_block['rules']['scoring'] = []
+    env_block['rules']['special_conditions'] = []
+
+    env_block['strategic_framework']['core_skills_required'] = env_block['strategic_framework'].get(
+        'core_skills_required', [])[:2]
+    env_block['strategic_framework']['tactical_approaches'] = []
+    env_block['strategic_framework']['success_patterns'] = []
+    env_block['strategic_framework']['failure_patterns'] = []
+    env_block['strategic_framework']['recommended_focus'] = env_block['strategic_framework'].get(
+        'recommended_focus', [])[:1]
+
+    env_block['transferable_skills'] = env_block.get('transferable_skills', [])
+    env_block['learning_recommendations']['intermediate_focus'] = []
+    env_block['learning_recommendations']['advanced_focus'] = []
+    env_block['learning_recommendations']['expert_focus'] = []
+
+    return doc
+
+
+def _format_environment_payload(env_knowledge: Dict[str, Any]) -> Dict[str, Any]:
+    payload = {
+        'environment_profile': env_knowledge.get('environment_profile', {}),
+        'objectives': env_knowledge.get('objectives', {}),
+        'rules': env_knowledge.get('rules', {}),
+        'strategic_framework': env_knowledge.get('strategic_framework', {}),
+        'learning_recommendations': env_knowledge.get('learning_recommendations', {}),
+        'reward_structure': env_knowledge.get('reward_structure', {}),
+        'learning_parameters': env_knowledge.get('learning_parameters', {}),
+        'custom_rewards': env_knowledge.get('custom_rewards', []),
+        'custom_penalties': env_knowledge.get('custom_penalties', []),
+        'knowledge_progression': env_knowledge.get('knowledge_progression', {}),
+        'experiment_logs': env_knowledge.get('experiment_logs', [])
+    }
+    return payload
+
+
+def _frontend_env_key(environment: str) -> str:
+    return 'arena_pong' if environment == 'pong' else environment
+
+
+def _ensure_environment_knowledge(agent_id: str, environment: str):
+    env_dir, personalized_path, default_path, legacy_path = _get_env_knowledge_paths(agent_id, environment)
+    os.makedirs(env_dir, exist_ok=True)
+    env_context = _load_environment_context(environment if environment != 'pong' else 'arena_pong')
+
+    if os.path.exists(legacy_path):
+        if not os.path.exists(default_path):
+            shutil.copy2(legacy_path, default_path)
+        if not os.path.exists(personalized_path):
+            shutil.copy2(legacy_path, personalized_path)
+        try:
+            os.remove(legacy_path)
+        except OSError:
+            pass
+
+    default_doc = None
+    if not os.path.exists(default_path):
+        default_doc = _base_knowledge_document(agent_id, environment, env_context)
+        _write_json_file(default_path, default_doc)
+    else:
+        default_doc = _read_json_file(default_path)
+
+    if not os.path.exists(personalized_path):
+        minimal_doc = _build_minimal_personalized_document(agent_id, environment, env_context, default_doc)
+        _write_json_file(personalized_path, minimal_doc)
+
+    personalized_doc = _read_json_file(personalized_path)
+    default_doc = default_doc or _read_json_file(default_path)
+    return personalized_path, default_path, personalized_doc, default_doc
+
 
 # Enhanced GameSession class with Transfer Learning Support
 class GameSession:
@@ -224,6 +602,10 @@ class GameSession:
         self.agent1_id = agent1_id
         self.environment = environment
         self.room_id = f"match_{match_id}"
+        self.trajectory_run_id: Optional[str] = None
+        self.agent_config_snapshot_id: Optional[str] = None
+        self.user_pref_snapshot_id: Optional[str] = None
+        self.trajectory_buffer: List[Dict[str, Any]] = []
 
         # Initialize Arena environment with 256-dimension support
         if environment == 'pong':
@@ -248,10 +630,20 @@ class GameSession:
         self.transferable_skills_used = []
         self.knowledge_effectiveness = 0.0
 
+        # Initialize Pong Decision Logger and Toolbox for knowledge sample tracking (Phase 4)
+        if environment == 'pong':
+            self.decision_logger = PongDecisionLogger()
+            # Create toolbox wrapped around environment, connected to logger for tool tracking
+            self.toolbox = PongToolbox(self.env, logger=self.decision_logger)
+        else:
+            self.decision_logger = None
+            self.toolbox = None
+
         print(f"🎮 Enhanced game session created: {match_id} ({environment})")
         if self.agent1:
             envs = self.get_agent_environments(agent1_id)
             print(f"   🔄 Agent has experience in: {envs}")
+        self._prepare_trajectory_run()
 
     def get_agent_environments(self, agent_id: str) -> List[str]:
         """Get list of environments agent has experience in"""
@@ -324,6 +716,111 @@ class GameSession:
         except Exception as e:
             print(f"❌ Error checking transfer opportunities: {e}")
 
+    def _prepare_trajectory_run(self):
+        """Initialize trajectory run record and optional snapshots."""
+        try:
+            with app.app_context():
+                match = Match.query.get(self.match_id)
+                agent_record = Agent.query.get(self.agent1_id)
+
+                if not match or not agent_record:
+                    print("⚠️ Cannot prepare trajectory run without match/agent records")
+                    return
+
+                self.user_pref_snapshot_id = self._get_latest_user_pref_snapshot(match.user_id)
+
+                config_snapshot = self._capture_agent_config_snapshot(agent_record)
+                if config_snapshot:
+                    self.agent_config_snapshot_id = config_snapshot.id
+
+                run_metadata = {
+                    'created_from': 'game_session',
+                    'environment': self.environment,
+                    'transfer_learning_ready': True
+                }
+
+                if hasattr(self.env, 'get_env_context'):
+                    try:
+                        run_metadata['env_context'] = self.env.get_env_context()
+                    except Exception as ctx_err:
+                        print(f"⚠️ Could not capture environment context for run: {ctx_err}")
+
+                trajectory_run = TrajectoryRun(
+                    match_id=self.match_id,
+                    user_id=self.user_id,
+                    agent_id=self.agent1_id,
+                    environment=self.environment,
+                    metadata=json.dumps(run_metadata),
+                    agent_config_snapshot_id=self.agent_config_snapshot_id,
+                    user_pref_snapshot_id=self.user_pref_snapshot_id
+                )
+
+                db.session.add(trajectory_run)
+                db.session.commit()
+
+                self.trajectory_run_id = trajectory_run.id
+                self.trajectory_buffer = []
+                print(f"🧾 Trajectory run initialized: {self.trajectory_run_id}")
+
+        except Exception as e:
+            db.session.rollback()
+            print(f"⚠️ Could not prepare trajectory run: {e}")
+
+    def _get_latest_user_pref_snapshot(self, user_id: int) -> Optional[str]:
+        try:
+            snapshot = UserPreferenceSnapshot.query.filter_by(user_id=user_id)\
+                .order_by(UserPreferenceSnapshot.created_at.desc()).first()
+            return snapshot.id if snapshot else None
+        except Exception as e:
+            print(f"⚠️ Could not fetch user preference snapshot: {e}")
+            return None
+
+    def _capture_agent_config_snapshot(self, agent_record: Agent) -> Optional[AgentConfigSnapshot]:
+        try:
+            runtime_config = {}
+            decision_config = {}
+
+            if self.agent1:
+                runtime_config = {
+                    'learning_rate': getattr(self.agent1, 'learning_rate', None),
+                    'gamma': getattr(self.agent1, 'gamma', None),
+                    'exploration_rate': getattr(self.agent1, 'exploration_rate', None),
+                    'exploration_decay': getattr(self.agent1, 'exploration_decay', None),
+                    'min_exploration': getattr(self.agent1, 'min_exploration', None),
+                    'replay_batch_size': getattr(self.agent1, 'replay_batch_size', None),
+                    'target_update_frequency': getattr(self.agent1, 'target_update_frequency', None),
+                    'architecture_version': agent_record.architecture_version,
+                    'environment': self.environment
+                }
+
+                decision_agent = getattr(self.agent1, 'decision_agent', None)
+                if decision_agent:
+                    decision_config = {
+                        'learning_rate': getattr(decision_agent, 'learning_rate', None),
+                        'gamma': getattr(decision_agent, 'gamma', None),
+                        'exploration_rate': getattr(decision_agent, 'exploration_rate', None),
+                        'exploration_decay': getattr(decision_agent, 'exploration_decay', None),
+                        'min_exploration': getattr(decision_agent, 'min_exploration', None),
+                        'batch_size': getattr(decision_agent, 'batch_size', None),
+                        'target_update_frequency': getattr(decision_agent, 'target_update_frequency', None)
+                    }
+
+            config_snapshot = AgentConfigSnapshot(
+                agent_id=self.agent1_id,
+                match_id=self.match_id,
+                config_data=json.dumps(runtime_config),
+                decision_agent_config=json.dumps(decision_config)
+            )
+
+            db.session.add(config_snapshot)
+            db.session.flush()
+            return config_snapshot
+
+        except Exception as e:
+            db.session.rollback()
+            print(f"⚠️ Could not capture agent config snapshot: {e}")
+            return None
+
     def start_game(self):
         """Start game with enhanced transfer learning"""
         if self.running:
@@ -375,17 +872,57 @@ class GameSession:
             print(f"🎯 Enhanced game loop started for {self.match_id}")
 
             while self.running:
-                # Get current state
+                # Get current state for agent decision
                 current_state = self.env.create_state()
+
+                # Log decision step BEFORE toolbox calls (Phase 4: Prepare context and reset tracking)
+                if self.decision_logger:
+                    self.decision_logger.start_step(current_state, None)  # Action not yet determined
+
+                # Get state using toolbox if available (tracks tool usage for knowledge logging)
+                if self.toolbox:
+                    # Use toolbox observation tools to track tool usage
+                    ball_state = self.toolbox.read_ball_state()
+                    paddles_state = self.toolbox.read_paddles_state()
+                    score = self.toolbox.read_score()
 
                 # Agent makes decision (with transfer learning)
                 ai_action = self.agent1.get_action(current_state)
 
-                # Step environment (this handles action execution)
-                next_state, reward, game_ended = self.env.step(ai_action)
+                # Update logger with actual action
+                if self.decision_logger:
+                    self.decision_logger.current_action = ai_action
+
+                # Step environment using toolbox if available (tracks tool usage)
+                if self.toolbox:
+                    # Use toolbox action methods to execute action and track tool usage
+                    if ai_action == 0:
+                        next_state, reward, game_ended, info = self.toolbox.move_paddle_up()
+                    elif ai_action == 2:
+                        next_state, reward, game_ended, info = self.toolbox.move_paddle_down()
+                    else:  # ai_action == 1
+                        next_state, reward, game_ended, info = self.toolbox.hold_position()
+                else:
+                    # Fallback to direct environment call if toolbox not available
+                    next_state, reward, game_ended, info = self.env.step(ai_action)
+
+                # Log knowledge samples if meaningful event occurred (Phase 4)
+                if self.decision_logger:
+                    event = info.get("event", "none")
+                    if event in ["ai_hit_ball", "ai_miss_ball"]:
+                        self.decision_logger.log_step_result(event, reward, info)
 
                 # Enhanced learning with transfer tracking
                 self.agent1.learn(reward=reward, next_raw_state=next_state, done=game_ended)
+
+                # Buffer trajectory data
+                self._record_trajectory_step(
+                    state=current_state,
+                    next_state=next_state,
+                    action=ai_action,
+                    reward=reward,
+                    done=game_ended or self.env.game_over
+                )
 
                 # Track transfer learning events
                 self._track_transfer_events()
@@ -422,6 +959,104 @@ class GameSession:
 
         except Exception as e:
             print(f"⚠️ Error tracking transfer events: {e}")
+
+    def _record_trajectory_step(self, state, next_state, action, reward, done):
+        """Buffer trajectory data for later persistence."""
+        if not self.trajectory_run_id:
+            return
+
+        try:
+            normalized_state = None
+            normalized_next_state = None
+
+            if self.agent1 and hasattr(self.agent1, 'network'):
+                normalized_state = self.agent1.network.normalize_input(state) if state is not None else None
+                normalized_next_state = self.agent1.network.normalize_input(next_state) if next_state is not None else None
+
+            buffer_entry = {
+                'timestamp': datetime.now(timezone.utc),
+                'state': self._ensure_list(state),
+                'next_state': self._ensure_list(next_state),
+                'normalized_state': normalized_state.tolist() if normalized_state is not None else None,
+                'normalized_next_state': normalized_next_state.tolist() if normalized_next_state is not None else None,
+                'action': action,
+                'reward': reward,
+                'done': bool(done),
+                'expert_choice': getattr(self.agent1, 'last_expert_choice', None),
+                'rule_action': getattr(self.agent1, 'last_rule_action', None),
+                'ddqn_action': getattr(self.agent1, 'last_ddqn_action', None),
+                'metadata': {
+                    'match_id': self.match_id
+                }
+            }
+
+            self.trajectory_buffer.append(buffer_entry)
+        except Exception as e:
+            print(f"⚠️ Could not buffer trajectory step: {e}")
+
+    def _finalize_trajectory_run(self, enhanced_stats: Optional[Dict[str, Any]] = None):
+        """Persist buffered trajectory data to the database."""
+        if not self.trajectory_run_id or not self.trajectory_buffer:
+            return
+
+        try:
+            with app.app_context():
+                run = TrajectoryRun.query.get(self.trajectory_run_id)
+                if not run:
+                    print(f"⚠️ Trajectory run {self.trajectory_run_id} missing; skipping persistence")
+                    return
+
+                total_reward = sum(step.get('reward', 0.0) for step in self.trajectory_buffer)
+                run.total_steps = len(self.trajectory_buffer)
+                run.total_reward = total_reward
+                run.completed_at = datetime.now(timezone.utc)
+
+                run.run_metadata = json.dumps({
+                    'enhanced_stats': enhanced_stats or {},
+                    'transfer_events': len(self.transfer_events),
+                    'skills_used': len(self.transferable_skills_used)
+                })
+
+                for idx, step in enumerate(self.trajectory_buffer):
+                    trajectory_step = TrajectoryStep(
+                        run_id=self.trajectory_run_id,
+                        step_index=idx,
+                        timestamp=step['timestamp'],
+                        state_vector=json.dumps(step['state']),
+                        next_state_vector=json.dumps(step['next_state']),
+                        normalized_state_vector=json.dumps(step['normalized_state']),
+                        normalized_next_state_vector=json.dumps(step['normalized_next_state']),
+                        action=step['action'],
+                        reward=step['reward'],
+                        done=step['done'],
+                        expert_choice=step['expert_choice'],
+                        rule_action=step['rule_action'],
+                        ddqn_action=step['ddqn_action'],
+                        step_metadata=json.dumps(step.get('metadata', {}))
+                    )
+                    db.session.add(trajectory_step)
+
+                db.session.commit()
+                print(f"💾 Persisted {len(self.trajectory_buffer)} trajectory steps for run {self.trajectory_run_id}")
+
+        except Exception as e:
+            db.session.rollback()
+            print(f"❌ Error persisting trajectory buffer: {e}")
+        finally:
+            self.trajectory_buffer = []
+
+    @staticmethod
+    def _ensure_list(value):
+        if value is None:
+            return None
+        if isinstance(value, list):
+            return value
+        if hasattr(value, 'tolist'):
+            return value.tolist()
+        try:
+            return list(value)
+        except Exception:
+            return [value]
 
     def _execute_ai_action(self, action: int):
         """Execute AI action"""
@@ -489,6 +1124,9 @@ class GameSession:
             pong_stats = self.env.get_pong_stats()
             enhanced_stats = self.agent1.end_match(winner_name, final_scores, pong_stats)
 
+            # Persist buffered trajectory data
+            self._finalize_trajectory_run(enhanced_stats)
+
             # Update database with transfer learning metrics
             self._update_database_with_transfer_metrics(winner, final_scores, enhanced_stats)
 
@@ -497,7 +1135,7 @@ class GameSession:
                 'winner': winner,
                 'final_scores': final_scores,
                 'match_id': self.match_id,
-                'match_duration': (datetime.utcnow() - self.match_start_time).total_seconds() / 60.0,
+                'match_duration': (datetime.now(timezone.utc) - self.match_start_time).total_seconds() / 60.0,
                 'transfer_learning': {
                     'events_count': len(self.transfer_events),
                     'skills_used': len(self.transferable_skills_used),
@@ -513,6 +1151,9 @@ class GameSession:
         except Exception as e:
             print(f"❌ Error handling enhanced game end: {e}")
         finally:
+            # Ensure buffered data is flushed even if errors occurred
+            if self.trajectory_buffer:
+                self._finalize_trajectory_run()
             self.running = False
 
     def _calculate_transfer_effectiveness(self) -> float:
@@ -547,7 +1188,7 @@ class GameSession:
                     match.status = 'completed'
                     match.winner = winner
                     match.final_score = json.dumps(final_scores)
-                    match.completed_at = datetime.utcnow()
+                    match.completed_at = datetime.now(timezone.utc)
                     match.transfer_events_count = len(self.transfer_events)
                     match.transferable_skills_used = len(self.transferable_skills_used)
                     match.knowledge_transfer_effectiveness = self.knowledge_effectiveness
@@ -560,7 +1201,7 @@ class GameSession:
                     else:
                         agent_record.total_losses += 1
 
-                    agent_record.last_trained = datetime.utcnow()
+                    agent_record.last_trained = datetime.now(timezone.utc)
                     agent_record.total_training_time += 1.0
 
                     # Update transfer learning metrics
@@ -701,6 +1342,62 @@ def get_current_user():
     return jsonify({'user': user.to_dict()})
 
 
+@app.route('/api/users/preferences', methods=['POST'])
+def save_user_preferences():
+    """Persist a new user preference snapshot for personalization-aware training."""
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({'error': 'Not authenticated'}), 401
+
+    payload = request.get_json() or {}
+
+    try:
+        snapshot = UserPreferenceSnapshot(
+            user_id=user_id,
+            preferences=json.dumps({
+                'control_scheme': payload.get('control_scheme', 'keyboard'),
+                'playstyle': payload.get('playstyle', 'balanced'),
+                'ui_theme': payload.get('ui_theme', 'default'),
+                'difficulty': payload.get('difficulty', 'standard'),
+                'notes': payload.get('notes')
+            }),
+            learning_goals=json.dumps(payload.get('learning_goals', [])),
+            agent_focus=json.dumps(payload.get('agent_focus', [])),
+            notes=payload.get('notes')
+        )
+
+        db.session.add(snapshot)
+        db.session.commit()
+
+        return jsonify({'success': True, 'snapshot': snapshot.to_dict()})
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"❌ Error saving user preferences: {e}")
+        return jsonify({'error': 'Failed to save preferences'}), 500
+
+
+@app.route('/api/users/preferences/latest', methods=['GET'])
+def get_latest_user_preferences():
+    """Return latest preference snapshot for the authenticated user."""
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({'error': 'Not authenticated'}), 401
+
+    try:
+        snapshot = UserPreferenceSnapshot.query.filter_by(user_id=user_id)\
+            .order_by(UserPreferenceSnapshot.created_at.desc()).first()
+
+        if not snapshot:
+            return jsonify({'snapshot': None})
+
+        return jsonify({'snapshot': snapshot.to_dict()})
+
+    except Exception as e:
+        print(f"❌ Error fetching user preferences: {e}")
+        return jsonify({'error': 'Failed to fetch preferences'}), 500
+
+
 # Enhanced Agent Management with Transfer Learning
 
 @app.route('/api/agents', methods=['GET'])
@@ -769,6 +1466,7 @@ def create_agent():
             os.makedirs(f"{agent_dir}/environments/{environment}", exist_ok=True)
             os.makedirs(f"{agent_dir}/transfers", exist_ok=True)
             print(f"📁 Created agent file structure: {agent_dir}")
+            _ensure_environment_knowledge(agent.id, environment)
         except Exception as e:
             print(f"⚠️ Error creating agent file structure: {e}")
 
@@ -856,235 +1554,76 @@ def get_agent_environments(agent_id):
 
 @app.route('/api/agents/<agent_id>/knowledge', methods=['GET'])
 def get_agent_knowledge(agent_id):
-    """Get agent's knowledge data for editing - loads from environment context if needed"""
+    """Return personalized and default knowledge for editing."""
     user_id = session.get('user_id')
     if not user_id:
         return jsonify({'error': 'Not authenticated'}), 401
 
     try:
-        # Verify agent ownership
         agent = Agent.query.filter_by(id=agent_id, user_id=user_id).first()
         if not agent:
             return jsonify({'error': 'Agent not found'}), 404
 
-        # Load agent's knowledge from file
-        knowledge_file = f"saas_agents/{agent_id}/environments/{agent.primary_environment}/knowledge.json"
-        
-        # Get default Arena Pong context for complete knowledge
-        from arena_pong_environment import ArenaPongEnvironment
-        temp_env = ArenaPongEnvironment(match_id="temp_for_context")
-        default_context = temp_env.get_env_context()
-        
-        if os.path.exists(knowledge_file):
-            with open(knowledge_file, 'r') as f:
-                knowledge_data = json.load(f)
-        else:
-            # Create complete knowledge structure from environment context
-            knowledge_data = {
-                "environment_specific": {
-                    agent.primary_environment: {
-                        "environment_profile": {
-                            "environment_id": agent.primary_environment,
-                            "display_name": default_context.get('display_name', 'Arena Pong'),
-                            "environment_type": default_context.get('environment_type', 'competitive_real_time'),
-                            "understanding_level": "basic",
-                            "total_sessions": 0,
-                            "first_encountered": time.time(),
-                            "last_updated": time.time()
-                        },
-                        "objectives": {
-                            "primary": default_context.get('objective', {}).get('primary', 'Score 21 points before opponent'),
-                            "secondary": default_context.get('objective', {}).get('secondary', []),
-                            "victory_conditions": default_context.get('objective', {}).get('victory_conditions', []),
-                            "failure_conditions": default_context.get('objective', {}).get('failure_conditions', [])
-                        },
-                        "rules": {
-                            "core_mechanics": default_context.get('rules', []),
-                            "game_mechanics": default_context.get('game_mechanics', {})
-                        },
-                        "strategic_framework": {
-                            "core_skills_required": default_context.get('strategic_concepts', {}).get('core_skills', []),
-                            "tactical_approaches": default_context.get('strategic_concepts', {}).get('tactical_approaches', []),
-                            "success_patterns": default_context.get('strategic_concepts', {}).get('success_patterns', []),
-                            "failure_patterns": default_context.get('strategic_concepts', {}).get('failure_patterns', [])
-                        },
-                        "transferable_skills": default_context.get('transferable_skills', []),
-                        "learning_recommendations": default_context.get('learning_recommendations', {}),
-                        "reward_structure": {
-                            "ball_hit": 1.0,
-                            "ball_miss": -0.5,
-                            "score_point": 3.0,
-                            "concede_point": -0.5,
-                            "match_win": 10.0,
-                            "match_loss": -10.0
-                        },
-                        "learning_parameters": {
-                            "learning_rate": 0.001,
-                            "exploration_rate": 0.3,
-                            "discount_factor": 0.99
-                        }
-                    }
-                }
-            }
+        environment = agent.primary_environment
+        personalized_path, default_path, knowledge_data, default_doc = _ensure_environment_knowledge(agent_id, environment)
+        env_key = _frontend_env_key(environment)
 
-        # Extract editable sections
-        env_knowledge = knowledge_data.get('environment_specific', {}).get(agent.primary_environment, {})
-        
-        # Ensure all sections from environment context are present
-        if not env_knowledge.get('objectives', {}).get('primary'):
-            env_knowledge['objectives'] = {
-                "primary": default_context.get('objective', {}).get('primary', 'Score 21 points before opponent'),
-                "secondary": default_context.get('objective', {}).get('secondary', []),
-                "victory_conditions": default_context.get('objective', {}).get('victory_conditions', []),
-                "failure_conditions": default_context.get('objective', {}).get('failure_conditions', [])
-            }
-        
-        if not env_knowledge.get('rules', {}).get('core_mechanics'):
-            env_knowledge['rules'] = {
-                "core_mechanics": default_context.get('rules', []),
-                "game_mechanics": default_context.get('game_mechanics', {})
-            }
-        
-        if not env_knowledge.get('strategic_framework', {}).get('core_skills_required'):
-            env_knowledge['strategic_framework'] = {
-                "core_skills_required": default_context.get('strategic_concepts', {}).get('core_skills', []),
-                "tactical_approaches": default_context.get('strategic_concepts', {}).get('tactical_approaches', []),
-                "success_patterns": default_context.get('strategic_concepts', {}).get('success_patterns', []),
-                "failure_patterns": default_context.get('strategic_concepts', {}).get('failure_patterns', [])
-            }
-        
-        if not env_knowledge.get('transferable_skills'):
-            env_knowledge['transferable_skills'] = default_context.get('transferable_skills', [])
-        
-        if not env_knowledge.get('learning_recommendations'):
-            env_knowledge['learning_recommendations'] = default_context.get('learning_recommendations', {})
-        
-        # Format knowledge data for frontend (which expects it under arena_pong)
-        formatted_knowledge = {
-            'environment_specific': {
-                'arena_pong': {
-                    'environment_profile': env_knowledge.get('environment_profile', {}),
-                    'objectives': env_knowledge.get('objectives', {}),
-                    'rules': env_knowledge.get('rules', {}),
-                    'strategic_framework': env_knowledge.get('strategic_framework', {}),
-                    'transferable_skills': env_knowledge.get('transferable_skills', []),
-                    'learning_recommendations': env_knowledge.get('learning_recommendations', {}),
-                    'reward_structure': env_knowledge.get('reward_structure', {}),
-                    'learning_parameters': env_knowledge.get('learning_parameters', {}),
-                    'custom_rewards': env_knowledge.get('custom_rewards', []),
-                    'custom_penalties': env_knowledge.get('custom_penalties', [])
-                }
-            }
-        }
+        env_knowledge = knowledge_data.get('environment_specific', {}).get(environment, {})
+        default_env = default_doc.get('environment_specific', {}).get(environment, {})
+
+        personalized_payload = _format_environment_payload(env_knowledge)
+        default_payload = _format_environment_payload(default_env)
 
         return jsonify({
             'success': True,
-            'knowledge': formatted_knowledge,
+            'knowledge_paths': {
+                'personalized': personalized_path,
+                'default': default_path
+            },
+            'knowledge': {'environment_specific': {env_key: personalized_payload}},
+            'default_knowledge': {'environment_specific': {env_key: default_payload}},
             'agent_name': agent.name,
-            'environment': agent.primary_environment
+            'environment': environment
         })
 
     except Exception as e:
         print(f"❌ Error loading agent knowledge: {e}")
         return jsonify({'error': 'Failed to load agent knowledge'}), 500
 
-
 @app.route('/api/agents/<agent_id>/knowledge', methods=['PUT'])
 def update_agent_knowledge(agent_id):
-    """Update agent's knowledge data with proper basic instructions handling"""
+    """Update personalized knowledge while keeping defaults intact."""
     user_id = session.get('user_id')
     if not user_id:
         return jsonify({'error': 'Not authenticated'}), 401
 
     try:
-        # Verify agent ownership
         agent = Agent.query.filter_by(id=agent_id, user_id=user_id).first()
         if not agent:
             return jsonify({'error': 'Agent not found'}), 404
 
-        data = request.get_json()
-        updated_knowledge = data.get('knowledge', {})
+        payload = request.get_json() or {}
+        env = agent.primary_environment
+        env_key = _frontend_env_key(env)
+        personalized_path, _, knowledge_data, _ = _ensure_environment_knowledge(agent_id, env)
 
-        # Load existing knowledge file
-        knowledge_file = f"saas_agents/{agent_id}/environments/{agent.primary_environment}/knowledge.json"
-        knowledge_dir = os.path.dirname(knowledge_file)
-        os.makedirs(knowledge_dir, exist_ok=True)
+        env_updates = payload.get('knowledge', {}).get('environment_specific', {}).get(env_key, {})
+        env_store = knowledge_data.setdefault('environment_specific', {}).setdefault(env, {})
 
-        # Load or create knowledge structure
-        if os.path.exists(knowledge_file):
-            with open(knowledge_file, 'r') as f:
-                knowledge_data = json.load(f)
-        else:
-            # Create basic structure if no file exists
-            knowledge_data = {
-                "general_knowledge": {
-                    "transferable_strategies": [],
-                    "meta_learning_principles": [],
-                    "cross_environment_patterns": [],
-                    "abstract_concepts": [],
-                    "neural_symbolic_correlations": []
-                },
-                "environment_specific": {
-                    agent.primary_environment: {
-                        "environment_profile": {},
-                        "objectives": {},
-                        "rules": {},
-                        "strategic_framework": {},
-                        "transferable_skills": [],
-                        "learning_recommendations": {},
-                        "reward_structure": {},
-                        "learning_parameters": {}
-                    }
-                },
-                "transfer_mappings": {
-                    "strategy_abstractions": {},
-                    "concept_translations": {},
-                    "success_patterns": [],
-                    "neural_pattern_mappings": {}
-                },
-                "symbolic_decision_history": [],
-                "metadata": {
-                    "version": "2.2.0 - Persistent Basic Instructions",
-                    "agent_id": agent_id,
-                    "environments": [agent.primary_environment],
-                    "created": datetime.now().isoformat(),
-                    "last_updated": datetime.now().isoformat(),
-                    "transfer_learning_enabled": True,
-                    "neural_symbolic_integration": True,
-                    "environment_knowledge_integration": True
-                }
-            }
+        preserved_progression = deepcopy(env_store.get('knowledge_progression', {}))
+        preserved_unlocks = deepcopy(env_store.get('knowledge_unlocks', []))
 
-        # Update the environment-specific knowledge with the full structure
-        env_knowledge = knowledge_data['environment_specific'][agent.primary_environment]
-        env_knowledge.update(updated_knowledge.get('environment_specific', {}).get('arena_pong', {}))
+        env_store.update(env_updates)
+        env_store.pop('transferable_skills', None)
 
-        # Ensure all basic instruction categories exist in knowledge structure
-        if 'rules' not in env_knowledge:
-            env_knowledge['rules'] = {}
-        if 'core_mechanics' not in env_knowledge['rules']:
-            env_knowledge['rules']['core_mechanics'] = []
+        if preserved_progression:
+            env_store['knowledge_progression'] = preserved_progression
+        if preserved_unlocks:
+            env_store['knowledge_unlocks'] = preserved_unlocks
 
-        if 'strategic_framework' not in env_knowledge:
-            env_knowledge['strategic_framework'] = {}
-        for category in ['core_skills_required', 'success_patterns', 'failure_patterns', 'recommended_focus']:
-            if category not in env_knowledge['strategic_framework']:
-                env_knowledge['strategic_framework'][category] = []
+        knowledge_data.setdefault('metadata', {})['last_updated'] = datetime.now().isoformat()
+        _write_json_file(personalized_path, knowledge_data)
 
-        if 'transferable_skills' not in env_knowledge:
-            env_knowledge['transferable_skills'] = []
-
-        if 'objectives' not in env_knowledge:
-            env_knowledge['objectives'] = {}
-
-        # Update metadata
-        knowledge_data['metadata']['last_updated'] = datetime.now().isoformat()
-
-        # Save updated knowledge
-        with open(knowledge_file, 'w') as f:
-            json.dump(knowledge_data, f, indent=2)
-
-        print(f"✅ Agent basic instructions updated: {agent_id}")
         return jsonify({
             'success': True,
             'message': 'Agent basic instructions updated successfully'
@@ -1094,127 +1633,34 @@ def update_agent_knowledge(agent_id):
         print(f"❌ Error updating agent basic instructions: {e}")
         return jsonify({'error': 'Failed to update agent basic instructions'}), 500
 
-
 @app.route('/api/agents/<agent_id>/knowledge/reset', methods=['POST'])
 def reset_agent_knowledge(agent_id):
-    """Reset agent's knowledge to ONLY environment defaults from get_env_context()"""
+    """Reset agent's knowledge to the default template for the environment."""
     user_id = session.get('user_id')
     if not user_id:
         return jsonify({'error': 'Not authenticated'}), 401
 
     try:
-        # Verify agent ownership
         agent = Agent.query.filter_by(id=agent_id, user_id=user_id).first()
         if not agent:
             return jsonify({'error': 'Agent not found'}), 404
 
-        # Get default Arena Pong context
-        from arena_pong_environment import ArenaPongEnvironment
-        temp_env = ArenaPongEnvironment(match_id="temp_for_context")
-        default_context = temp_env.get_env_context()
+        env = agent.primary_environment
+        personalized_path, default_path, _, default_doc = _ensure_environment_knowledge(agent_id, env)
+        _write_json_file(personalized_path, default_doc)
 
-        # Create knowledge structure with ONLY environment defaults
-        knowledge_data = {
-            "general_knowledge": {
-                "transferable_strategies": [],
-                "meta_learning_principles": [],
-                "cross_environment_patterns": [],
-                "abstract_concepts": [],
-                "neural_symbolic_correlations": []
-            },
-            "environment_specific": {
-                agent.primary_environment: {
-                    "environment_profile": {
-                        "environment_id": agent.primary_environment,
-                        "display_name": default_context.get('display_name', 'Arena Pong'),
-                        "environment_type": default_context.get('environment_type', 'competitive_real_time'),
-                        "understanding_level": "basic",
-                        "total_sessions": 0,
-                        "first_encountered": time.time(),
-                        "last_updated": time.time()
-                    },
-                    # Primary objective from environment
-                    "objectives": {
-                        "primary": default_context.get('objective', {}).get('primary',
-                                                                            'Score 21 points before opponent')
-                    },
-                    # Game rules from environment
-                    "rules": {
-                        "core_mechanics": default_context.get('rules', [])
-                    },
-                    # Strategic framework from environment
-                    "strategic_framework": {
-                        "core_skills_required": default_context.get('strategic_concepts', {}).get('core_skills', []),
-                        "success_patterns": default_context.get('strategic_concepts', {}).get('success_patterns', []),
-                        "failure_patterns": default_context.get('strategic_concepts', {}).get('failure_patterns', []),
-                        "recommended_focus": default_context.get('learning_recommendations', {}).get('neural_focus', [])
-                    },
-                    # Transferable skills from environment
-                    "transferable_skills": default_context.get('transferable_skills', []),
-
-                    # Initialize empty structures for other data
-                    "learning_recommendations": default_context.get('learning_recommendations', {}),
-                    "reward_structure": {
-                        "ball_hit": 1.0,
-                        "ball_miss": -0.5,
-                        "score_point": 3.0,
-                        "concede_point": -0.5,
-                        "match_win": 10.0,
-                        "match_loss": -10.0
-                    },
-                    "learning_parameters": {
-                        "learning_rate": 0.001,
-                        "exploration_rate": 0.3,
-                        "discount_factor": 0.99
-                    },
-                    "strategies": [],
-                    "lessons": [],
-                    "tactical_knowledge": [],
-                    "performance_patterns": [],
-                    "neural_insights": []
-                }
-            },
-            "transfer_mappings": {
-                "strategy_abstractions": {},
-                "concept_translations": {},
-                "success_patterns": [],
-                "neural_pattern_mappings": {}
-            },
-            "symbolic_decision_history": [],
-            "metadata": {
-                "version": "2.2.0 - Reset to Environment Defaults",
-                "agent_id": agent_id,
-                "environments": [agent.primary_environment],
-                "created": datetime.now().isoformat(),
-                "last_updated": datetime.now().isoformat(),
-                "transfer_learning_enabled": True,
-                "neural_symbolic_integration": True,
-                "environment_knowledge_integration": True
-            }
-        }
-
-        # Save reset knowledge
-        knowledge_file = f"saas_agents/{agent_id}/environments/{agent.primary_environment}/knowledge.json"
-        knowledge_dir = os.path.dirname(knowledge_file)
-        os.makedirs(knowledge_dir, exist_ok=True)
-
-        with open(knowledge_file, 'w') as f:
-            json.dump(knowledge_data, f, indent=2)
-
-        print(f"✅ Agent knowledge reset to environment defaults only: {agent_id}")
         return jsonify({
             'success': True,
-            'message': 'Agent knowledge reset to environment defaults only'
+            'message': 'Agent knowledge reset to defaults'
         })
 
     except Exception as e:
         print(f"❌ Error resetting agent knowledge: {e}")
         return jsonify({'error': 'Failed to reset agent knowledge'}), 500
 
-
 @app.route('/api/agents/<agent_id>/environment-defaults', methods=['GET'])
 def get_environment_defaults(agent_id):
-    """Get environment defaults for knowledge editor"""
+    """Return the default template knowledge for the agent's environment."""
     user_id = session.get('user_id')
     if not user_id:
         return jsonify({'error': 'Not authenticated'}), 401
@@ -1224,130 +1670,62 @@ def get_environment_defaults(agent_id):
         if not agent:
             return jsonify({'error': 'Agent not found'}), 404
 
-        # Get environment from query params
-        environment = request.args.get('environment', 'arena_pong')
+        env = agent.primary_environment
+        _, default_path, _, default_doc = _ensure_environment_knowledge(agent_id, env)
+        env_key = _frontend_env_key(env)
+        env_payload = _format_environment_payload(default_doc.get('environment_specific', {}).get(env, {}))
 
-        # Load environment defaults from Arena Pong Environment
-        if environment == 'arena_pong':
-            from arena_pong_environment import ArenaPongEnvironment
-
-            # Create temporary environment to get context
-            temp_env = ArenaPongEnvironment()
-            env_context = temp_env.get_env_context()
-
-            # Format for frontend - structured for basic instructions
-            defaults = {
-                'environment_id': environment,
-                'objective': env_context.get('objective', {}),
-                'rules': env_context.get('rules', []),
-                'strategic_concepts': env_context.get('strategic_concepts', {}),
-                'transferable_skills': env_context.get('transferable_skills', []),
-                'learning_recommendations': env_context.get('learning_recommendations', {}),
-                'performance_metrics': env_context.get('performance_metrics', {}),
-                'success_indicators': env_context.get('success_indicators', {})
-            }
-
-            return jsonify(defaults)
-        else:
-            # Future: support other environments
-            return jsonify({'error': f'Environment {environment} not supported yet'}), 400
+        return jsonify({
+            'default_path': default_path,
+            'environment_specific': {env_key: env_payload}
+        })
 
     except Exception as e:
         print(f"❌ Error getting environment defaults: {e}")
         return jsonify({'error': 'Failed to get environment defaults'}), 500
 
-
 @app.route('/api/agents/<agent_id>/load-environment-defaults', methods=['POST'])
 def load_environment_defaults(agent_id):
-    """Load environment defaults into agent knowledge (merge operation)"""
+    """Merge default template knowledge into the personalized file."""
     user_id = session.get('user_id')
     if not user_id:
         return jsonify({'error': 'Not authenticated'}), 401
 
     try:
-        # Verify agent ownership
         agent = Agent.query.filter_by(id=agent_id, user_id=user_id).first()
         if not agent:
             return jsonify({'error': 'Agent not found'}), 404
 
-        # Get environment context
-        from arena_pong_environment import ArenaPongEnvironment
-        temp_env = ArenaPongEnvironment()
-        env_context = temp_env.get_env_context()
+        env = agent.primary_environment
+        personalized_path, _, knowledge_data, default_doc = _ensure_environment_knowledge(agent_id, env)
+        env_store = knowledge_data.setdefault('environment_specific', {}).setdefault(env, {})
+        default_env = default_doc.get('environment_specific', {}).get(env, {})
 
-        # Load existing knowledge file
-        knowledge_file = f"saas_agents/{agent_id}/environments/{agent.primary_environment}/knowledge.json"
-        knowledge_dir = os.path.dirname(knowledge_file)
-        os.makedirs(knowledge_dir, exist_ok=True)
+        def merge_missing(dest, src):
+            for key, value in src.items():
+                if isinstance(value, dict):
+                    merge_missing(dest.setdefault(key, {}), value)
+                elif isinstance(value, list):
+                    dest.setdefault(key, [])
+                    for item in value:
+                        if item not in dest[key]:
+                            dest[key].append(item)
+                else:
+                    if key not in dest or dest[key] in (None, '', []):
+                        dest[key] = value
 
-        if os.path.exists(knowledge_file):
-            with open(knowledge_file, 'r') as f:
-                knowledge_data = json.load(f)
-        else:
-            return jsonify({'error': 'Agent knowledge not found'}), 404
-
-        # Get current environment knowledge
-        env_knowledge = knowledge_data["environment_specific"][agent.primary_environment]
-
-        # Merge environment defaults with existing data (add missing defaults)
-        def merge_defaults_with_existing(existing_list, default_list):
-            """Add any missing defaults to existing list"""
-            merged = list(existing_list) if existing_list else []
-            for default_item in default_list:
-                if default_item not in merged:
-                    merged.append(default_item)
-            return merged
-
-        # Update with merged defaults
-        env_knowledge["rules"]["core_mechanics"] = merge_defaults_with_existing(
-            env_knowledge.get("rules", {}).get("core_mechanics", []),
-            env_context.get('rules', [])
-        )
-
-        strategic_concepts = env_context.get('strategic_concepts', {})
-        strategic_framework = env_knowledge.get("strategic_framework", {})
-
-        strategic_framework["core_skills_required"] = merge_defaults_with_existing(
-            strategic_framework.get("core_skills_required", []),
-            strategic_concepts.get('core_skills', [])
-        )
-        strategic_framework["success_patterns"] = merge_defaults_with_existing(
-            strategic_framework.get("success_patterns", []),
-            strategic_concepts.get('success_patterns', [])
-        )
-        strategic_framework["failure_patterns"] = merge_defaults_with_existing(
-            strategic_framework.get("failure_patterns", []),
-            strategic_concepts.get('failure_patterns', [])
-        )
-        strategic_framework["recommended_focus"] = merge_defaults_with_existing(
-            strategic_framework.get("recommended_focus", []),
-            env_context.get('learning_recommendations', {}).get('neural_focus', [])
-        )
-
-        env_knowledge["strategic_framework"] = strategic_framework
-
-        env_knowledge["transferable_skills"] = merge_defaults_with_existing(
-            env_knowledge.get("transferable_skills", []),
-            env_context.get('transferable_skills', [])
-        )
-
-        # Update metadata
-        knowledge_data["metadata"]["last_updated"] = datetime.now().isoformat()
-
-        # Save updated knowledge
-        with open(knowledge_file, 'w') as f:
-            json.dump(knowledge_data, f, indent=2)
+        merge_missing(env_store, default_env)
+        knowledge_data.setdefault('metadata', {})['last_updated'] = datetime.now().isoformat()
+        _write_json_file(personalized_path, knowledge_data)
 
         return jsonify({
             'success': True,
-            'message': f'Environment defaults merged successfully'
+            'message': 'Environment defaults merged successfully'
         })
 
     except Exception as e:
         print(f"❌ Error loading environment defaults: {e}")
         return jsonify({'error': 'Failed to load environment defaults'}), 500
-
-# Enhanced Match Management
 
 @app.route('/api/matches', methods=['GET'])
 def get_user_matches():
@@ -1399,6 +1777,49 @@ def create_enhanced_match():
     except Exception as e:
         print(f"❌ Create enhanced match error: {e}")
         return jsonify({'error': 'Failed to create match'}), 500
+
+
+@app.route('/api/datasets/export', methods=['POST'])
+def export_training_dataset():
+    """Convert stored trajectories into a downloadable dataset artifact."""
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({'error': 'Not authenticated'}), 401
+
+    payload = request.get_json() or {}
+    agent_id = payload.get('agent_id')
+    environment = payload.get('environment')
+
+    try:
+        if agent_id:
+            agent = Agent.query.filter_by(id=agent_id, user_id=user_id).first()
+            if not agent:
+                return jsonify({'error': 'Agent not found'}), 404
+
+        export_filters = {
+            'user_id': user_id,
+            'agent_id': agent_id,
+            'environment': environment
+        }
+
+        dataset_info = build_and_export_dataset(
+            db_session=db.session,
+            trajectory_run_model=TrajectoryRun,
+            trajectory_step_model=TrajectoryStep,
+            preference_model=UserPreferenceSnapshot,
+            config_model=AgentConfigSnapshot,
+            output_dir=DATASET_EXPORT_DIR,
+            filters=export_filters
+        )
+
+        if dataset_info['step_count'] == 0:
+            return jsonify({'error': 'No trajectory data found for export'}), 404
+
+        return jsonify({'success': True, 'dataset': dataset_info})
+
+    except Exception as e:
+        print(f"❌ Dataset export error: {e}")
+        return jsonify({'error': 'Failed to export dataset'}), 500
 
 
 # Enhanced WebSocket Events

@@ -55,7 +55,8 @@ saas_agents/{agent_id}/
 │   ├── pong/
 │   │   ├── network.npz             # Pong-specific network weights
 │   │   ├── brain.json              # Neural learning state
-│   │   ├── knowledge.json          # Pong-specific knowledge
+│   │   ├── pong_knowledge.json     # Personalized Pong knowledge
+│   │   ├── default_pong_knowledge.json  # Unlock template
 │   │   └── matches.json            # Match history
 │   └── {future_environment}/
 └── transfers/

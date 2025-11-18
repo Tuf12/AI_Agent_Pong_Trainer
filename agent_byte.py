@@ -4,6 +4,7 @@ import json
 import time
 import random
 import os
+import shutil
 from collections import deque
 import datetime
 from typing import Dict, Optional, List, Any, Tuple
@@ -11,6 +12,8 @@ import uuid
 
 # Import the enhanced dual brain system with neural-symbolic integration
 from dual_brain_system import EnhancedDualBrainAgent, EnhancedAgentBrain, EnhancedAgentKnowledge
+# Import the decision agent for expert selection
+from decision_agent import DecisionAgent, USE_RULE, USE_DDQN
 
 
 class StandardizedNetwork:
@@ -528,7 +531,9 @@ class EnhancedAgentByte:
             agent_id=agent_id,
             environment_id=environment_id,
             brain_file=self.brain_file,
-            knowledge_file=self.knowledge_file
+            knowledge_file=self.knowledge_file,
+            canonical_knowledge_file=self.canonical_knowledge_file if hasattr(self, 'canonical_knowledge_file') else None,
+            default_knowledge_file=self.default_environment_knowledge_file
         )
 
         # Initialize enhanced standardized neural network with pattern tracking
@@ -575,11 +580,29 @@ class EnhancedAgentByte:
         # Enhanced logger with neural-symbolic tracking
         self.logger = EnhancedMatchLogger(agent_id, environment_id)
 
+        # Initialize Decision Agent for expert selection
+        # Use normalized state size (256) since network normalizes inputs
+        self.decision_agent = DecisionAgent(
+            state_size=256,  # StandardizedNetwork normalizes to 256 dimensions
+            learning_rate=0.001,
+            gamma=self.gamma
+        )
+        
+        # Load existing decision agent if available
+        self._load_decision_agent()
+        
+        # Track last state/actions for decision agent logging
+        self.last_state = None
+        self.last_ddqn_action = None
+        self.last_rule_action = None
+        self.last_expert_choice = None
+
         print("✅ Enhanced Agent Byte v2.1 Created with Neural-Symbolic Integration!")
         print(f"   🆔 Agent ID: {agent_id}")
         print(f"   🌍 Environment: {environment_id}")
         print(f"   🧠 Enhanced Standardized Network: 256→512→256→128→64→{action_size}")
         print(f"   🧠🧩 Enhanced Dual Brain: Neural-Symbolic Integration Active")
+        print(f"   🎯 Decision Agent: Expert Selection Active")
         print(f"   🔄 Transfer Learning: Cross-environment ready")
         print(f"   📁 Enhanced Storage: {self.agent_dir}")
 
@@ -599,6 +622,7 @@ class EnhancedAgentByte:
         # Define enhanced file paths
         self.profile_file = os.path.join(self.core_dir, "agent_profile.json")
         self.general_knowledge_file = os.path.join(self.core_dir, "general_knowledge.json")
+        self.canonical_knowledge_file = os.path.join(self.core_dir, "knowledge.json")
         self.meta_learning_file = os.path.join(self.core_dir, "meta_learning.json")
 
         # Neural-symbolic integration files
@@ -607,12 +631,116 @@ class EnhancedAgentByte:
 
         self.network_file = os.path.join(self.env_dir, "network.npz")
         self.brain_file = os.path.join(self.env_dir, "brain.json")
-        self.knowledge_file = os.path.join(self.env_dir, "knowledge.json")
+        self.personalized_knowledge_file = os.path.join(
+            self.env_dir, f"{self.environment_id}_knowledge.json")
+        self.default_environment_knowledge_file = os.path.join(
+            self.env_dir, f"default_{self.environment_id}_knowledge.json")
+        self.legacy_knowledge_file = os.path.join(self.env_dir, "knowledge.json")
+        self.knowledge_file = self.personalized_knowledge_file
+        self.decision_agent_file = os.path.join(self.env_dir, "decision_agent.pkl")
+
+        self._migrate_environment_knowledge_files()
 
         # Initialize enhanced agent profile
         self._initialize_enhanced_agent_profile()
 
         print(f"📁 Enhanced agent structure initialized: {self.agent_dir}")
+
+    def _migrate_environment_knowledge_files(self):
+        """Ensure personalized/default knowledge files exist and migrate legacy data."""
+        try:
+            env_dir_exists = os.path.exists(self.env_dir)
+            if not env_dir_exists:
+                os.makedirs(self.env_dir, exist_ok=True)
+
+            # Legacy knowledge.json migration
+            if os.path.exists(self.legacy_knowledge_file):
+                if not os.path.exists(self.default_environment_knowledge_file):
+                    shutil.copy2(self.legacy_knowledge_file, self.default_environment_knowledge_file)
+                if not os.path.exists(self.personalized_knowledge_file):
+                    shutil.copy2(self.legacy_knowledge_file, self.personalized_knowledge_file)
+                try:
+                    os.remove(self.legacy_knowledge_file)
+                except OSError:
+                    pass
+
+            # If personalized file missing but default exists, clone default
+            if (not os.path.exists(self.personalized_knowledge_file)
+                    and os.path.exists(self.default_environment_knowledge_file)):
+                shutil.copy2(self.default_environment_knowledge_file, self.personalized_knowledge_file)
+
+            # If default missing but personalized exists, seed default from personalized
+            if os.path.exists(self.personalized_knowledge_file) and not os.path.exists(
+                    self.default_environment_knowledge_file):
+                shutil.copy2(self.personalized_knowledge_file, self.default_environment_knowledge_file)
+
+            if not os.path.exists(self.personalized_knowledge_file):
+                self._write_empty_environment_knowledge(self.personalized_knowledge_file)
+
+            if not os.path.exists(self.default_environment_knowledge_file):
+                self._write_empty_environment_knowledge(self.default_environment_knowledge_file)
+
+        except Exception as e:
+            print(f"⚠️ Knowledge migration warning: {e}")
+
+    def _write_empty_environment_knowledge(self, filepath: str):
+        """Create a minimal environment knowledge file as a placeholder."""
+        try:
+            knowledge = {
+                "general_knowledge": {
+                    "transferable_strategies": [],
+                    "meta_learning_principles": [],
+                    "cross_environment_patterns": [],
+                    "abstract_concepts": [],
+                    "neural_symbolic_correlations": []
+                },
+                "environment_specific": {
+                    self.environment_id: {
+                        "environment_profile": {
+                            "environment_id": self.environment_id,
+                            "display_name": self.environment_id.replace('_', ' ').title(),
+                            "environment_type": "unknown",
+                            "understanding_level": "basic",
+                            "total_sessions": 0,
+                            "first_encountered": time.time(),
+                            "last_updated": time.time()
+                        },
+                        "objectives": {},
+                        "rules": {},
+                        "strategic_framework": {},
+                        "strategies": [],
+                        "lessons": [],
+                        "tactical_knowledge": [],
+                        "performance_patterns": [],
+                        "neural_insights": [],
+                        "knowledge_unlocks": [],
+                        "experiment_logs": []
+                    }
+                },
+                "transfer_mappings": {
+                    "strategy_abstractions": {},
+                    "concept_translations": {},
+                    "success_patterns": [],
+                    "neural_pattern_mappings": {}
+                },
+                "symbolic_decision_history": [],
+                "metadata": {
+                    "version": "2.2.0 - Personalized Environment Knowledge",
+                    "agent_id": self.agent_id,
+                    "environments": [self.environment_id],
+                    "created": datetime.datetime.now().isoformat(),
+                    "last_updated": datetime.datetime.now().isoformat(),
+                    "transfer_learning_enabled": True,
+                    "neural_symbolic_integration": True,
+                    "environment_knowledge_integration": True
+                }
+            }
+
+            with open(filepath, 'w') as f:
+                json.dump(knowledge, f, indent=2)
+
+        except Exception as e:
+            print(f"⚠️ Could not create placeholder knowledge file {filepath}: {e}")
 
     def _initialize_enhanced_agent_profile(self):
         """Initialize or load enhanced agent profile with neural-symbolic tracking"""
@@ -666,6 +794,16 @@ class EnhancedAgentByte:
                 print(f"⚠️ Failed to load enhanced networks, using new initialization")
         else:
             print(f"🆕 No existing enhanced networks found, using new initialization")
+    
+    def _load_decision_agent(self):
+        """Load existing decision agent if available"""
+        if os.path.exists(self.decision_agent_file):
+            if self.decision_agent.load(self.decision_agent_file):
+                print(f"📥 Loaded existing Decision Agent for {self.environment_id}")
+            else:
+                print(f"⚠️ Failed to load Decision Agent, using new initialization")
+        else:
+            print(f"🆕 No existing Decision Agent found, using new initialization")
 
     def set_environment(self, env):
         """Set the environment instance for modular behavior"""
@@ -840,42 +978,50 @@ class EnhancedAgentByte:
         return awareness
 
     def get_action(self, raw_state: np.ndarray) -> int:
-        """Enhanced action selection with neural-symbolic integration"""
+        """
+        Enhanced action selection with Decision Agent for expert selection.
+        
+        This method:
+        1. Gets DDQN action from neural network
+        2. Gets Rule-based action from symbolic system
+        3. Uses Decision Agent to choose which expert to use
+        4. Returns the action from the chosen expert
+        """
         try:
-            # Get standardized network output
+            # Store state for later logging
+            self.last_state = raw_state.copy()
+            
+            # STEP 1: Get DDQN action (neural network)
             q_values = self.network.forward(raw_state)
-
-            # Epsilon-greedy action selection
+            
+            # Epsilon-greedy action selection for DDQN
             if random.random() < self.exploration_rate:
-                # Explore: choose random action
-                action = random.randint(0, self.action_size - 1)
+                ddqn_action = random.randint(0, self.action_size - 1)
             else:
-                # Exploit: choose best action
-                action = int(np.argmax(q_values))
-            self.network.record_decision_pattern(raw_state, action, 0.0)  # Reward updated later
-
-            # Get enhanced core features for transfer learning analysis
-            enhanced_features = self.network.get_enhanced_core_features()
-
-            # Apply enhanced symbolic decision making if context available
+                ddqn_action = int(np.argmax(q_values))
+            
+            self.network.record_decision_pattern(raw_state, ddqn_action, 0.0)  # Reward updated later
+            
+            # STEP 2: Get Rule-based action (symbolic system)
+            rule_action = ddqn_action  # Default to DDQN action if rule system not available
+            
             if self.app_context and hasattr(self.dual_brain, 'symbolic_decision_maker'):
                 try:
                     # Create action history and reward history for symbolic analysis
-                    action_history = [{'action': action, 'timestamp': time.time()}]
+                    action_history = [{'action': ddqn_action, 'timestamp': time.time()}]
                     reward_history = [0.0]  # Placeholder
 
-                    enhanced_action, reasoning, decision_info = self.dual_brain.symbolic_decision_maker.make_enhanced_decision(
+                    rule_action, reasoning, decision_info = self.dual_brain.symbolic_decision_maker.make_enhanced_decision(
                         raw_state, q_values, action_history, reward_history, self.exploration_rate
                     )
 
-                    # Record neural-symbolic decision
+                    # Record neural-symbolic decision for compatibility
                     decision_record = {
                         'timestamp': time.time(),
-                        'neural_action': action,
-                        'symbolic_action': enhanced_action,
+                        'neural_action': ddqn_action,
+                        'symbolic_action': rule_action,
                         'decision_info': decision_info,
-                        'reasoning': reasoning,
-                        'enhanced_features': enhanced_features
+                        'reasoning': reasoning
                     }
                     self.neural_symbolic_decisions.append(decision_record)
 
@@ -883,22 +1029,44 @@ class EnhancedAgentByte:
                     if self.logger:
                         self.logger.log_neural_symbolic_decision(decision_info)
 
-                    action = enhanced_action
-
                 except Exception as e:
                     print(f"⚠️ Symbolic decision error: {e}")
-                    # Fall back to neural action
-                    pass
-
+                    # Fall back to DDQN action
+                    rule_action = ddqn_action
+            else:
+                # No symbolic system available, use DDQN action
+                rule_action = ddqn_action
+            
+            # Store actions for logging
+            self.last_ddqn_action = ddqn_action
+            self.last_rule_action = rule_action
+            
+            # STEP 3: Use Decision Agent to choose which expert to use
+            # Normalize state for Decision Agent (same normalization as network)
+            normalized_state = self.network.normalize_input(raw_state)
+            expert_choice, final_action = self.decision_agent.choose_expert(
+                normalized_state, ddqn_action, rule_action
+            )
+            
+            # Store expert choice for logging
+            self.last_expert_choice = expert_choice
+            
             self.actions_taken += 1
-            return action
+            return final_action
 
         except Exception as e:
             print(f"⚠️ Enhanced action error: {e}")
             return random.randint(0, self.action_size - 1)
 
     def learn(self, reward: float, next_raw_state: np.ndarray, done: bool = False):
-        """Enhanced learning with neural-symbolic pattern tracking"""
+        """
+        Enhanced learning with neural-symbolic pattern tracking and Decision Agent training.
+        
+        This method:
+        1. Updates DDQN learning (existing)
+        2. Logs transition for Decision Agent
+        3. Trains Decision Agent
+        """
         if self.actions_taken == 0:
             return
 
@@ -941,6 +1109,51 @@ class EnhancedAgentByte:
                     self.exploration_rate *= self.exploration_decay
 
             self.training_steps += 1
+
+            # NEW: Log transition for Decision Agent and train it
+            if (self.last_state is not None and 
+                self.last_ddqn_action is not None and 
+                self.last_rule_action is not None and 
+                self.last_expert_choice is not None):
+                
+                # Normalize states for Decision Agent
+                normalized_last_state = self.network.normalize_input(self.last_state)
+                normalized_next_state = self.network.normalize_input(next_raw_state) if next_raw_state is not None else None
+                
+                # Record transition for Decision Agent
+                self.decision_agent.record_transition(
+                    state=normalized_last_state,
+                    ddqn_action=self.last_ddqn_action,
+                    rule_action=self.last_rule_action,
+                    expert_choice=self.last_expert_choice,
+                    reward=reward,
+                    next_state=normalized_next_state,
+                    done=done
+                )
+                
+                # Train Decision Agent
+                self.decision_agent.train()
+
+                # Record symbolic experiment outcome for knowledge corpus
+                if (self.dual_brain and hasattr(self.dual_brain, 'knowledge')
+                        and self.neural_symbolic_decisions):
+                    last_decision = self.neural_symbolic_decisions[-1]
+                    decision_info = last_decision.get('decision_info', {})
+                    experiment_payload = {
+                        'timestamp': time.time(),
+                        'environment': self.environment_id,
+                        'strategy': decision_info.get('strategy') or decision_info.get('skill_id') or decision_info.get(
+                            'decision_type'),
+                        'decision_type': decision_info.get('decision_type'),
+                        'reward': reward,
+                        'success': reward > 0,
+                        'expert_choice': self.last_expert_choice,
+                        'notes': last_decision.get('reasoning')
+                    }
+                    try:
+                        self.dual_brain.knowledge.record_experiment_outcome(experiment_payload)
+                    except Exception as experiment_error:
+                        print(f"⚠️ Unable to log experiment outcome: {experiment_error}")
 
             # Extract transferable insights
             self._extract_enhanced_transferable_insights(reward, done, enhanced_features)
@@ -1002,6 +1215,20 @@ class EnhancedAgentByte:
             # End enhanced logging with neural-symbolic insights
             enhanced_stats = {**game_stats, **enhanced_metrics}
             self.logger.end_match(winner, final_scores, enhanced_stats)
+
+            # Update knowledge progression/unlocks for this environment
+            if hasattr(self.dual_brain, 'knowledge'):
+                progression_payload = {
+                    'win': winner == "Agent Byte",
+                    'reward': getattr(self, 'match_reward', 0),
+                    'pattern_stability': enhanced_metrics.get('pattern_stability_score', 0.0),
+                    'symbolic_coherence': enhanced_metrics.get('neural_symbolic_coherence', 0.0),
+                    'skills_effectiveness': enhanced_metrics.get('transferable_skills_effectiveness', 0.0)
+                }
+                try:
+                    self.dual_brain.knowledge.update_environment_progression(progression_payload)
+                except Exception as progression_error:
+                    print(f"⚠️ Unable to update knowledge progression: {progression_error}")
 
             # Save enhanced progress
             self._save_enhanced_all_progress()
@@ -1133,7 +1360,7 @@ class EnhancedAgentByte:
             print(f"❌ Error updating enhanced agent capabilities: {e}")
 
     def _save_enhanced_all_progress(self):
-        """Save all enhanced agent progress including networks, neural patterns, and knowledge"""
+        """Save all enhanced agent progress including networks, neural patterns, knowledge, and Decision Agent"""
         try:
             # Save enhanced neural networks with pattern data
             self.network.save_network(self.network_file)
@@ -1150,6 +1377,9 @@ class EnhancedAgentByte:
 
             # Save decision correlation data
             self._save_decision_correlation_data()
+            
+            # Save Decision Agent
+            self.decision_agent.save(self.decision_agent_file)
 
             # Update profile with current environment if not already present
             if self.environment_id not in self.profile.get('environments', []):
@@ -1344,9 +1574,12 @@ class EnhancedAgentByte:
         return list(dict.fromkeys(recommendations))[:5]
 
     def get_stats(self) -> Dict[str, Any]:
-        """Get enhanced agent statistics with neural-symbolic metrics"""
+        """Get enhanced agent statistics with neural-symbolic metrics and Decision Agent stats"""
         capabilities = self.profile.get('enhanced_capabilities', {})
         neural_symbolic = self.profile.get('neural_symbolic_integration', {})
+        
+        # Get Decision Agent stats
+        decision_agent_stats = self.decision_agent.get_stats() if hasattr(self, 'decision_agent') else {}
 
         return {
             'games_played': self.games_played,
@@ -1367,6 +1600,17 @@ class EnhancedAgentByte:
             'enhanced_learning_efficiency': capabilities.get('learning_efficiency', 0.0),
             'neural_symbolic_coherence': capabilities.get('neural_symbolic_coherence', 0.0),
             'pattern_recognition_ability': capabilities.get('pattern_recognition_ability', 0.0),
+
+            # Decision Agent metrics
+            'decision_agent': {
+                'ddqn_choices': decision_agent_stats.get('ddqn_choices', 0),
+                'rule_choices': decision_agent_stats.get('rule_choices', 0),
+                'ddqn_ratio': decision_agent_stats.get('ddqn_ratio', 0.0),
+                'rule_ratio': decision_agent_stats.get('rule_ratio', 0.0),
+                'exploration_rate': decision_agent_stats.get('exploration_rate', 0.0),
+                'training_steps': decision_agent_stats.get('training_steps', 0),
+                'replay_buffer_size': decision_agent_stats.get('replay_buffer_size', 0)
+            },
 
             # Current session metrics
             'current_match_reward': self.match_reward,
